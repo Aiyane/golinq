@@ -44,8 +44,8 @@ func orderMainIterator(usedKey types.UsedKey, num int, dataNum int, instanceDict
 	} else {
 		// 取一个表
 		for name, records := range dataSources {
-			if _, exist := usedKey[name]; !exist {
-				usedKey[name] = true
+			if _, ok := usedKey[name]; !ok {
+				usedKey[name] = struct{}{}
 				for _, record := range records {
 					instanceDict[name] = record
 					orderMainIterator(usedKey, num+1, dataNum, instanceDict, dataSources, orders)
@@ -86,8 +86,8 @@ func orderIndexIterator(hasDataSources bool, indexKey interface{}, usedKey types
 		}
 	} else {
 		for name, indexRecords := range indexDict {
-			if _, exist := usedKey[name]; !exist {
-				usedKey[name] = true
+			if _, ok := usedKey[name]; !ok {
+				usedKey[name] = struct{}{}
 				if records2, exist2 := indexRecords[indexKey]; exist2 {
 					for _, record := range records2 {
 						instanceDict[name] = record

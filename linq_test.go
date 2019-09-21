@@ -10,8 +10,11 @@ import (
 var DB *gorm.DB
 
 func TestLinq(t *testing.T) {
+	// 注册 sql 驱动
 	Catcher.Register()
+	// 创建数据库对象
 	createDataBase()
+	// 获取 db 对象
 	db, _ := gorm.Open(DriverName, "test.db")
 	DB = db
 
@@ -121,6 +124,8 @@ func TestLinq(t *testing.T) {
 }
 
 func createDataBase() {
+	// 可以使用json对象表示数据库对象
+	// 或者 `string : struct列表` 的字典表示数据库对象
 	err := json.Unmarshal([]byte(
 		`{
 			"company": [

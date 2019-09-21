@@ -66,7 +66,7 @@ type IndexRecords map[IndexKey]Records
 //   },
 // }
 type IndexDict map[string]IndexRecords
-type UsedKey map[string]bool
+type UsedKey map[string]struct{}
 
 type Order int
 

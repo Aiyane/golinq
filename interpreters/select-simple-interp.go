@@ -31,8 +31,8 @@ func simpleMainIterator(usedKey types.UsedKey, num int, dataLen int, instanceDic
 	} else {
 		// 取一个表
 		for name, records := range dataSources {
-			if _, exist := usedKey[name]; !exist {
-				usedKey[name] = true
+			if _, ok := usedKey[name]; !ok {
+				usedKey[name] = struct{}{}
 				for _, record := range records {
 					instanceDict[name] = record
 					simpleMainIterator(usedKey, num+1, dataLen, instanceDict, dataSources)
@@ -72,8 +72,8 @@ func simpleIndexIterator(hasDataSources bool, indexKey interface{}, usedKeys typ
 		}
 	} else {
 		for name, indexRecords := range indexDict {
-			if _, exist := usedKeys[name]; !exist {
-				usedKeys[name] = true
+			if _, ok := usedKeys[name]; !ok {
+				usedKeys[name] = struct{}{}
 				if records2, exist2 := indexRecords[indexKey]; exist2 {
 					for _, record := range records2 {
 						instanceDict[name] = record

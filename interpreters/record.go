@@ -55,12 +55,12 @@ func setStructValue(resRecord interface{}, key string, value interface{}, isDele
 			delete(hadSetStructFieldValue, key)
 			delete(tmpFieldValue, key)
 		} else {
-			hadSetStructFieldValue[key] = true
+			hadSetStructFieldValue[key] = struct{}{}
 		}
 	}
 	if _, exist := t.FieldByName(key); exist {
 		// 设置过属性值
-		hadSetStructFieldValue[key] = true
+		hadSetStructFieldValue[key] = struct{}{}
 		setFieldValue(v.FieldByName(key), value)
 	} else {
 		setValueFromTag(t, v, key, value, isDelete)
@@ -119,7 +119,7 @@ func valueFromStruct(record interface{}, key string) (interface{}, bool) {
 		t = t.Elem()
 	}
 	var had bool
-	if hadSetStructFieldValue[key] {
+	if _, ok := hadSetStructFieldValue[key]; ok {
 		had = true
 	} else {
 		had = false

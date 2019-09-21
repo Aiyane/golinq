@@ -177,8 +177,8 @@ func groupMainIterator(groupDataSources types.GroupDataSources, usedKey types.Us
 	} else {
 		// 取一张表
 		for name, records := range dataSources {
-			if _, exist := usedKey[name]; !exist {
-				usedKey[name] = true
+			if _, ok := usedKey[name]; !ok {
+				usedKey[name] = struct{}{}
 				for _, record := range records {
 					instanceDict[name] = record
 					groupMainIterator(groupDataSources, usedKey, num+1, dataLen, instanceDict, dataSources)
@@ -219,8 +219,8 @@ func groupIndexIterator(hasDataSources bool, groupDataSources types.GroupDataSou
 		}
 	} else {
 		for name, indexRecords := range indexDict {
-			if _, exist := usedKey[name]; !exist {
-				usedKey[name] = true
+			if _, ok := usedKey[name]; !ok {
+				usedKey[name] = struct{}{}
 				if records2, exist2 := indexRecords[indexKey]; exist2 {
 					for _, record := range records2 {
 						instanceDict[name] = record
@@ -317,10 +317,10 @@ func groupAdjustName(newName string, resRecord interface{}, hadAdjust types.Used
 	}
 	if lstInGroupMap([]string{tableName, oldName}) {
 		setValue(resRecord, newName, value, false)
-		hadAdjust[newName] = true
+		hadAdjust[newName] = struct{}{}
 	} else {
 		setValue(resRecord, newName, nil, false)
-		hadAdjust[newName] = true
+		hadAdjust[newName] = struct{}{}
 	}
 }
 
@@ -336,7 +336,7 @@ func groupSelectStar(resRecord interface{}, groupDataSources types.GroupDataSour
 						newName := tableName + "_" + key
 						groupAdjustName(newName, resRecord, hadAdjust, keyName, value, tableName, key)
 						// 存在的key未被调整过的状态
-						if !hadAdjust[key] {
+						if _, ok := hadAdjust[key]; !ok {
 							newName2 := keyName[key] + "_" + key
 							// 先将存在的删除
 							setValue(resRecord, key, nil, true)
@@ -344,18 +344,18 @@ func groupSelectStar(resRecord interface{}, groupDataSources types.GroupDataSour
 						}
 					} else {
 						// 存在key已经是已有字段, 需要调整
-						if hadName[key] {
+						if _, ok := hadName[key]; ok {
 							newName := tableName + "_" + key
 							groupAdjustName(newName, resRecord, hadAdjust, keyName, value, tableName, key)
 							// key不是已有字段, 并且key也没有存在的
 						} else {
 							if lstInGroupMap([]string{tableName, key}) {
 								setValue(resRecord, key, value, false)
-								hadName[key] = true
+								hadName[key] = struct{}{}
 								keyName[key] = tableName
 							} else {
 								setValue(resRecord, key, nil, false)
-								hadName[key] = true
+								hadName[key] = struct{}{}
 								keyName[key] = tableName
 							}
 						}
