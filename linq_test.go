@@ -2,6 +2,7 @@ package golinq
 
 import (
 	"encoding/json"
+	"github.com/Aiyane/golinq/types"
 	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -17,6 +18,9 @@ func TestLinq(t *testing.T) {
 	// 获取 db 对象
 	db, _ := gorm.Open(DriverName, "test.db")
 	DB = db
+	RegisterDB2DataBase(map[string]types.DataSources{
+		"test.db": DataBase,
+	})
 
 	// 测试普通 select 语句
 	var company Company

@@ -23,6 +23,7 @@ var (
 	InsertInterp types.InsertInterp
 	UpdateInterp types.UpdateInterp
 	DeleteInterp types.DeleteInterp
+	DB2DataBase  map[string]types.DataSources
 )
 
 func init() {
@@ -187,4 +188,9 @@ func RegisterType(elem interface{}) {
 // 注册内建函数
 func RegisterFunc(key string, f functions.SqlClosureFunc) {
 	functions.AddFunc(key, f)
+}
+
+// 注册 db 对象与数据库映射
+func RegisterDB2DataBase(dB2DataBase map[string]types.DataSources) {
+	DB2DataBase = dB2DataBase
 }

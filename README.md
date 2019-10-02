@@ -15,6 +15,9 @@ func TestLinq(t *testing.T) {
 	createDataBase()
 	db, _ := gorm.Open(DriverName, "test.db")
 	DB = db
+    RegisterDB2DataBase(map[string]types.DataSources{
+		"test.db": DataBase,
+	})
 
 	// 测试普通 select 语句
 	var company Company

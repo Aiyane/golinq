@@ -54,7 +54,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/Aiyane/golinq/api.go (89.5%)</option>
+				<option value="file0">github.com/Aiyane/golinq/api.go (89.7%)</option>
 				
 				<option value="file1">github.com/Aiyane/golinq/conn.go (54.2%)</option>
 				
@@ -122,7 +122,7 @@
 				
 				<option value="file33">github.com/Aiyane/golinq/sql-parser/visitor.go (66.2%)</option>
 				
-				<option value="file34">github.com/Aiyane/golinq/stmt.go (75.0%)</option>
+				<option value="file34">github.com/Aiyane/golinq/stmt.go (74.7%)</option>
 				
 				<option value="file35">github.com/Aiyane/golinq/test/test_util.go (76.3%)</option>
 				
@@ -165,6 +165,7 @@ var (
         InsertInterp types.InsertInterp
         UpdateInterp types.UpdateInterp
         DeleteInterp types.DeleteInterp
+        DB2DataBase  map[string]types.DataSources
 )
 
 func init() <span class="cov8" title="1">{
@@ -329,6 +330,11 @@ func RegisterType(elem interface{}) <span class="cov8" title="1">{
 // 注册内建函数
 func RegisterFunc(key string, f functions.SqlClosureFunc) <span class="cov0" title="0">{
         functions.AddFunc(key, f)
+}</span>
+
+// 注册 db 对象与数据库映射
+func RegisterDB2DataBase(dB2DataBase map[string]types.DataSources) <span class="cov8" title="1">{
+        DB2DataBase = dB2DataBase
 }</span>
 </pre>
 		
@@ -14608,12 +14614,12 @@ func setStructValue(resRecord interface{}, key string, value interface{}, isDele
                         delete(hadSetStructFieldValue, key)
                         delete(tmpFieldValue, key)
                 }</span> else<span class="cov8" title="1"> {
-                        hadSetStructFieldValue[key] = true
+                        hadSetStructFieldValue[key] = struct{}{}
                 }</span>
         }
         <span class="cov8" title="1">if _, exist := t.FieldByName(key); exist </span><span class="cov0" title="0">{
                 // 设置过属性值
-                hadSetStructFieldValue[key] = true
+                hadSetStructFieldValue[key] = struct{}{}
                 setFieldValue(v.FieldByName(key), value)
         }</span> else<span class="cov8" title="1"> {
                 setValueFromTag(t, v, key, value, isDelete)
@@ -14672,7 +14678,7 @@ func valueFromStruct(record interface{}, key string) (interface{}, bool) <span c
                 t = t.Elem()
         }</span>
         <span class="cov8" title="1">var had bool
-        if hadSetStructFieldValue[key] </span><span class="cov8" title="1">{
+        if _, ok := hadSetStructFieldValue[key]; ok </span><span class="cov8" title="1">{
                 had = true
         }</span> else<span class="cov8" title="1"> {
                 had = false
@@ -15507,8 +15513,8 @@ func groupMainIterator(groupDataSources types.GroupDataSources, usedKey types.Us
         }</span> else<span class="cov8" title="1"> {
                 // 取一张表
                 for name, records := range dataSources </span><span class="cov8" title="1">{
-                        if _, exist := usedKey[name]; !exist </span><span class="cov8" title="1">{
-                                usedKey[name] = true
+                        if _, ok := usedKey[name]; !ok </span><span class="cov8" title="1">{
+                                usedKey[name] = struct{}{}
                                 for _, record := range records </span><span class="cov8" title="1">{
                                         instanceDict[name] = record
                                         groupMainIterator(groupDataSources, usedKey, num+1, dataLen, instanceDict, dataSources)
@@ -15549,8 +15555,8 @@ func groupIndexIterator(hasDataSources bool, groupDataSources types.GroupDataSou
                 }
         } else<span class="cov8" title="1"> {
                 for name, indexRecords := range indexDict </span><span class="cov8" title="1">{
-                        if _, exist := usedKey[name]; !exist </span><span class="cov8" title="1">{
-                                usedKey[name] = true
+                        if _, ok := usedKey[name]; !ok </span><span class="cov8" title="1">{
+                                usedKey[name] = struct{}{}
                                 if records2, exist2 := indexRecords[indexKey]; exist2 </span><span class="cov8" title="1">{
                                         for _, record := range records2 </span><span class="cov8" title="1">{
                                                 instanceDict[name] = record
@@ -15647,10 +15653,10 @@ func groupAdjustName(newName string, resRecord interface{}, hadAdjust types.Used
         }</span>
         <span class="cov8" title="1">if lstInGroupMap([]string{tableName, oldName}) </span><span class="cov8" title="1">{
                 setValue(resRecord, newName, value, false)
-                hadAdjust[newName] = true
+                hadAdjust[newName] = struct{}{}
         }</span> else<span class="cov8" title="1"> {
                 setValue(resRecord, newName, nil, false)
-                hadAdjust[newName] = true
+                hadAdjust[newName] = struct{}{}
         }</span>
 }
 
@@ -15666,7 +15672,7 @@ func groupSelectStar(resRecord interface{}, groupDataSources types.GroupDataSour
                                                 newName := tableName + "_" + key
                                                 groupAdjustName(newName, resRecord, hadAdjust, keyName, value, tableName, key)
                                                 // 存在的key未被调整过的状态
-                                                if !hadAdjust[key] </span><span class="cov8" title="1">{
+                                                if _, ok := hadAdjust[key]; !ok </span><span class="cov8" title="1">{
                                                         newName2 := keyName[key] + "_" + key
                                                         // 先将存在的删除
                                                         setValue(resRecord, key, nil, true)
@@ -15674,18 +15680,18 @@ func groupSelectStar(resRecord interface{}, groupDataSources types.GroupDataSour
                                                 }</span>
                                         } else<span class="cov8" title="1"> {
                                                 // 存在key已经是已有字段, 需要调整
-                                                if hadName[key] </span><span class="cov8" title="1">{
+                                                if _, ok := hadName[key]; ok </span><span class="cov8" title="1">{
                                                         newName := tableName + "_" + key
                                                         groupAdjustName(newName, resRecord, hadAdjust, keyName, value, tableName, key)
                                                         // key不是已有字段, 并且key也没有存在的
                                                 }</span> else<span class="cov8" title="1"> {
                                                         if lstInGroupMap([]string{tableName, key}) </span><span class="cov8" title="1">{
                                                                 setValue(resRecord, key, value, false)
-                                                                hadName[key] = true
+                                                                hadName[key] = struct{}{}
                                                                 keyName[key] = tableName
                                                         }</span> else<span class="cov8" title="1"> {
                                                                 setValue(resRecord, key, nil, false)
-                                                                hadName[key] = true
+                                                                hadName[key] = struct{}{}
                                                                 keyName[key] = tableName
                                                         }</span>
                                                 }
@@ -15957,8 +15963,8 @@ func orderMainIterator(usedKey types.UsedKey, num int, dataNum int, instanceDict
         }</span> else<span class="cov8" title="1"> {
                 // 取一个表
                 for name, records := range dataSources </span><span class="cov8" title="1">{
-                        if _, exist := usedKey[name]; !exist </span><span class="cov8" title="1">{
-                                usedKey[name] = true
+                        if _, ok := usedKey[name]; !ok </span><span class="cov8" title="1">{
+                                usedKey[name] = struct{}{}
                                 for _, record := range records </span><span class="cov8" title="1">{
                                         instanceDict[name] = record
                                         orderMainIterator(usedKey, num+1, dataNum, instanceDict, dataSources, orders)
@@ -15999,8 +16005,8 @@ func orderIndexIterator(hasDataSources bool, indexKey interface{}, usedKey types
                 }
         } else<span class="cov8" title="1"> {
                 for name, indexRecords := range indexDict </span><span class="cov8" title="1">{
-                        if _, exist := usedKey[name]; !exist </span><span class="cov8" title="1">{
-                                usedKey[name] = true
+                        if _, ok := usedKey[name]; !ok </span><span class="cov8" title="1">{
+                                usedKey[name] = struct{}{}
                                 if records2, exist2 := indexRecords[indexKey]; exist2 </span><span class="cov8" title="1">{
                                         for _, record := range records2 </span><span class="cov8" title="1">{
                                                 instanceDict[name] = record
@@ -16153,8 +16159,8 @@ func simpleMainIterator(usedKey types.UsedKey, num int, dataLen int, instanceDic
         }</span> else<span class="cov8" title="1"> {
                 // 取一个表
                 for name, records := range dataSources </span><span class="cov8" title="1">{
-                        if _, exist := usedKey[name]; !exist </span><span class="cov8" title="1">{
-                                usedKey[name] = true
+                        if _, ok := usedKey[name]; !ok </span><span class="cov8" title="1">{
+                                usedKey[name] = struct{}{}
                                 for _, record := range records </span><span class="cov8" title="1">{
                                         instanceDict[name] = record
                                         simpleMainIterator(usedKey, num+1, dataLen, instanceDict, dataSources)
@@ -16194,8 +16200,8 @@ func simpleIndexIterator(hasDataSources bool, indexKey interface{}, usedKeys typ
                 }
         } else<span class="cov8" title="1"> {
                 for name, indexRecords := range indexDict </span><span class="cov8" title="1">{
-                        if _, exist := usedKeys[name]; !exist </span><span class="cov8" title="1">{
-                                usedKeys[name] = true
+                        if _, ok := usedKeys[name]; !ok </span><span class="cov8" title="1">{
+                                usedKeys[name] = struct{}{}
                                 if records2, exist2 := indexRecords[indexKey]; exist2 </span><span class="cov8" title="1">{
                                         for _, record := range records2 </span><span class="cov8" title="1">{
                                                 instanceDict[name] = record
@@ -16384,9 +16390,9 @@ func compareValue(item interface{}, item2 interface{}) int <span class="cov8" ti
         case []interface{}:<span class="cov8" title="1">
                 for i, v1 := range item1 </span><span class="cov8" title="1">{
                         temRes := compareValue(v1, item2.([]interface{})[i])
-                        if temRes == 1 </span><span class="cov8" title="1">{
+                        if temRes == 1 </span><span class="cov0" title="0">{
                                 return 1
-                        }</span> else<span class="cov0" title="0"> if temRes == -1 </span><span class="cov0" title="0">{
+                        }</span> else<span class="cov8" title="1"> if temRes == -1 </span><span class="cov8" title="1">{
                                 return -1
                         }</span>
                 }
@@ -16394,7 +16400,7 @@ func compareValue(item interface{}, item2 interface{}) int <span class="cov8" ti
         case []string:<span class="cov8" title="1">
                 for i, v1 := range item1 </span><span class="cov8" title="1">{
                         temRes := compareValue(v1, item2.([]string)[i])
-                        if temRes == 1 </span><span class="cov8" title="1">{
+                        if temRes == 1 </span><span class="cov0" title="0">{
                                 return 1
                         }</span> else<span class="cov8" title="1"> if temRes == -1 </span><span class="cov8" title="1">{
                                 return -1
@@ -18462,10 +18468,10 @@ func (s *FakeStmt) ExecContext(ctx context.Context, args []driver.NamedValue) (d
                 }</span>
         }
         <span class="cov8" title="1">s.q = strings.Replace(s.q, "\"", "", -1)
-        res := SqlRun(s.q, DataBase, "").(int)
+        res := SqlRun(s.q, DB2DataBase[s.connection.db.name], "").(int)
         fResp := &amp;FakeResponse{
-                Response:   make([]map[string]interface{}, 0),
-                Exceptions: &amp;Exceptions{},
+                Response:     make([]map[string]interface{}, 0),
+                Exceptions:   &amp;Exceptions{},
                 RowsAffected: int64(res),
                 LastInsertID: int64(res),
         }
@@ -18522,11 +18528,16 @@ func (s *FakeStmt) QueryContext(ctx context.Context, args []driver.NamedValue) (
 
         <span class="cov8" title="1">s.q = strings.Replace(s.q, "\"", "", -1)
 
-        records := SqlRun(s.q, DataBase, "").([]interface{})
-        resp := make([]map[string]interface{}, 0, len(records))
-        for _, record := range records </span><span class="cov8" title="1">{
-                resp = append(resp, record.(map[string]interface{}))
-        }</span>
+        records := SqlRun(s.q, DB2DataBase[s.connection.db.name], "")
+        var resp []map[string]interface{}
+        if records == nil </span><span class="cov0" title="0">{
+                resp = make([]map[string]interface{}, 0, 0)
+        }</span> else<span class="cov8" title="1"> {
+                resp = make([]map[string]interface{}, 0, len(records.([]interface{})))
+                for _, record := range records.([]interface{}) </span><span class="cov8" title="1">{
+                        resp = append(resp, record.(map[string]interface{}))
+                }</span>
+        }
         <span class="cov8" title="1">fResp := &amp;FakeResponse{
                 Response:   resp,
                 Exceptions: &amp;Exceptions{},

@@ -70,10 +70,10 @@ func (s *FakeStmt) ExecContext(ctx context.Context, args []driver.NamedValue) (d
 		}
 	}
 	s.q = strings.Replace(s.q, "\"", "", -1)
-	res := SqlRun(s.q, DataBase, "").(int)
+	res := SqlRun(s.q, DB2DataBase[s.connection.db.name], "").(int)
 	fResp := &FakeResponse{
-		Response:   make([]map[string]interface{}, 0),
-		Exceptions: &Exceptions{},
+		Response:     make([]map[string]interface{}, 0),
+		Exceptions:   &Exceptions{},
 		RowsAffected: int64(res),
 		LastInsertID: int64(res),
 	}
@@ -130,10 +130,15 @@ func (s *FakeStmt) QueryContext(ctx context.Context, args []driver.NamedValue) (
 
 	s.q = strings.Replace(s.q, "\"", "", -1)
 
-	records := SqlRun(s.q, DataBase, "").([]interface{})
-	resp := make([]map[string]interface{}, 0, len(records))
-	for _, record := range records {
-		resp = append(resp, record.(map[string]interface{}))
+	records := SqlRun(s.q, DB2DataBase[s.connection.db.name], "")
+	var resp []map[string]interface{}
+	if records == nil {
+		resp = make([]map[string]interface{}, 0, 0)
+	} else {
+		resp = make([]map[string]interface{}, 0, len(records.([]interface{})))
+		for _, record := range records.([]interface{}) {
+			resp = append(resp, record.(map[string]interface{}))
+		}
 	}
 	fResp := &FakeResponse{
 		Response:   resp,
