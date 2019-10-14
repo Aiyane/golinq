@@ -886,9 +886,9 @@ func (self *visitor) doVisitComparisonOperator(ctx *parser.ComparisonOperatorCon
 			}
 		} else {
 			if greaterSymbol == nil {
-				return "<=>"
-			} else {
 				return "<="
+			} else {
+				return "<=>"
 			}
 		}
 	} else if greaterSymbol != nil {
