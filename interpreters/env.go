@@ -14,7 +14,7 @@ var (
 	expr                   *sql_parser.EXPR                // 语句
 	TypeRegistry           = make(map[string]reflect.Type) // 类型字典
 	hadSetStructFieldValue types.UsedKey                   // 是否设置过 struct 属性值
-	tmpFieldValue          map[string]interface{}          // 临时属性值
+	tmpFieldValue          map[string]interface{}          // 调整重名时保存临时字段名的值
 	preFieldName           map[string]struct{}             // 前一个select语句的 select 字段名
 )
 

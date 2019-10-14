@@ -88,7 +88,7 @@ func (self *visitor) doVisitInsertStatement(ctx *parser.InsertStatementContext) 
 	case *Link:
 		link = v
 	default:
-		logrus.Errorf("[doVisitInsertStatement] insertStatementValue no such type [%v]", insertStatementValue)
+		logrus.Errorf("[doVisitInsertStatement] insertStatementValue no such type [%T]", insertStatementValue)
 		return
 	}
 	self.InsertStatement = &InsertExpr{
@@ -145,7 +145,7 @@ func (self *visitor) doVisitExpressionOrDefault(ctx *parser.ExpressionOrDefaultC
 		expression | DEFAULT
 	*/
 	if expression := ctx.Expression(); expression != nil {
-		return self.visitExpression(expression).(SqlToken)
+		return dealSqlToken(self.visitExpression(expression))
 	}
 	return Default
 }
@@ -354,7 +354,7 @@ func (self *visitor) doVisitSelectExpressionElement(ctx *parser.SelectExpression
 	/*
 		expression (AS? ID)?
 	*/
-	name := self.visitExpression(ctx.Expression()).(SqlToken)
+	name := dealSqlToken(self.visitExpression(ctx.Expression()))
 
 	alis := ctx.ID()
 	if alis == nil {
@@ -393,10 +393,24 @@ func dealWhere(_whereExpr interface{}) *Func {
 	case []SqlToken:
 		whereExpr = realWhereExpr[0].(*Func)
 	default:
-		logrus.Errorf("[doVisitFromClause] no such type [%T]", whereExpr)
+		logrus.Errorf("[dealWhere] no such type [%T]", whereExpr)
 		return nil
 	}
 	return whereExpr
+}
+
+func dealSqlToken(_arg interface{}) SqlToken {
+	var arg SqlToken
+	switch expr := _arg.(type) {
+	case SqlToken:
+		arg = expr
+	case []SqlToken:
+		arg = expr[0]
+	default:
+		logrus.Errorf("[dealSqlToken] no such type [%T]", arg)
+		return nil
+	}
+	return arg
 }
 
 func (self *visitor) doVisitFromClause(ctx *parser.FromClauseContext) *From {
@@ -645,7 +659,7 @@ func (self *visitor) doVisitOrderByClause(ctx *parser.OrderByClauseContext) []Sq
 	var args []SqlToken
 	expressions := ctx.AllOrderByExpression()
 	for _, expression := range expressions {
-		args = append(args, self.doVisitOrderByExpression(expression.(*parser.OrderByExpressionContext)).(SqlToken))
+		args = append(args, dealSqlToken(self.doVisitOrderByExpression(expression.(*parser.OrderByExpressionContext))))
 	}
 	return args
 }
@@ -706,8 +720,8 @@ func (self *visitor) doVisitLogicalExpression(ctx *parser.LogicalExpressionConte
 	/*
 		expression logicalOperator expression
 	*/
-	left := self.visitExpression(ctx.Expression(0)).(SqlToken)
-	right := self.visitExpression(ctx.Expression(1)).(SqlToken)
+	left := dealSqlToken(self.visitExpression(ctx.Expression(0)))
+	right := dealSqlToken(self.visitExpression(ctx.Expression(1)))
 	var args []interface{}
 	args = append(args, left)
 	args = append(args, right)
@@ -721,7 +735,7 @@ func (self *visitor) doVisitIsExpression(ctx *parser.IsExpressionContext) *Func 
 	/*
 		predicate IS NOT? testValue=(TRUE | FALSE | UNKNOWN)
 	*/
-	left := self.visitPredicate(ctx.Predicate()).(SqlToken)
+	left := dealSqlToken(self.visitPredicate(ctx.Predicate()))
 	val := ctx.GetTestValue().GetText()
 	var right SqlToken
 	var name string
@@ -755,7 +769,7 @@ func (self *visitor) doVisitInPredicate(ctx *parser.InPredicateContext) *Func {
 	/*
 		predicate NOT? IN '(' (selectStatement | expressions) ')':
 	*/
-	left := self.visitPredicate(ctx.Predicate()).(SqlToken)
+	left := dealSqlToken(self.visitPredicate(ctx.Predicate()))
 	var name string
 	var right interface{}
 	selectStatement := ctx.SelectStatement()
@@ -786,7 +800,7 @@ func (self *visitor) doVisitExpressions(ctx *parser.ExpressionsContext) []SqlTok
 	*/
 	var args []SqlToken
 	for _, expression := range ctx.AllExpression() {
-		args = append(args, self.visitExpression(expression).(SqlToken))
+		args = append(args, dealSqlToken(self.visitExpression(expression)))
 	}
 	return args
 }
@@ -795,13 +809,21 @@ func (self *visitor) doVisitIsNullPredicate(ctx *parser.IsNullPredicateContext) 
 	/*
 		predicate IS nullNotnull
 	*/
-	left := self.visitPredicate(ctx.Predicate()).(SqlToken)
+	left := dealSqlToken(self.visitPredicate(ctx.Predicate()))
 	right := self.doVisitNullNotnull(ctx.NullNotnull().(*parser.NullNotnullContext))
-	name := "is"
-	return &Func{
-		Name: name,
-		Args: []interface{}{left, right},
+	switch v := right.(type) {
+	case *Const:
+		return &Func{
+			Name: "is",
+			Args: []interface{}{left, right},
+		}
+	case *Func:
+		v.Name = "is_not"
+		v.Args = []interface{}{left, v.Args[0]}
+		return v
 	}
+	logrus.Errorf("[doVisitIsNullPredicate] no such type [%T]", right)
+	return nil
 }
 
 func (self *visitor) doVisitNullNotnull(ctx *parser.NullNotnullContext) SqlToken {
@@ -833,9 +855,9 @@ func (self *visitor) doVisitBinaryComparasionPredicate(ctx *parser.BinaryCompara
 	/*
 		left=predicate comparisonOperator right=predicate
 	*/
-	left := self.visitPredicate(ctx.Predicate(0)).(SqlToken)
+	left := dealSqlToken(self.visitPredicate(ctx.Predicate(0)))
 	op := self.doVisitComparisonOperator(ctx.ComparisonOperator().(*parser.ComparisonOperatorContext))
-	right := self.visitPredicate(ctx.Predicate(1)).(SqlToken)
+	right := dealSqlToken(self.visitPredicate(ctx.Predicate(1)))
 	return &Func{
 		Name: op,
 		Args: []interface{}{left, right},
@@ -884,7 +906,7 @@ func (self *visitor) doVisitSubqueryComparasionPredicate(ctx *parser.SubqueryCom
 	/*
 		predicate comparisonOperator quantifier=(ALL | ANY | SOME) '(' selectStatement ')'
 	*/
-	left := self.visitPredicate(ctx.Predicate()).(SqlToken)
+	left := dealSqlToken(self.visitPredicate(ctx.Predicate()))
 	op := self.doVisitComparisonOperator(ctx.ComparisonOperator().(*parser.ComparisonOperatorContext))
 	selectStatement := self.visitSelectStatement(ctx.SelectStatement())
 	return &Func{
@@ -897,9 +919,9 @@ func (self *visitor) doVisitBetweenPredicate(ctx *parser.BetweenPredicateContext
 	/*
 		predicate NOT? BETWEEN predicate AND predicate
 	*/
-	left := self.visitPredicate(ctx.Predicate(0)).(SqlToken)
-	start := self.visitPredicate(ctx.Predicate(1)).(SqlToken)
-	end := self.visitPredicate(ctx.Predicate(2)).(SqlToken)
+	left := dealSqlToken(self.visitPredicate(ctx.Predicate(0)))
+	start := dealSqlToken(self.visitPredicate(ctx.Predicate(1)))
+	end := dealSqlToken(self.visitPredicate(ctx.Predicate(2)))
 	var name string
 	if n := ctx.NOT(); n != nil {
 		name = "not_between"
@@ -916,8 +938,8 @@ func (self *visitor) doVisitLikePredicate(ctx *parser.LikePredicateContext) *Fun
 	/*
 		predicate NOT? LIKE predicate
 	*/
-	left := self.visitPredicate(ctx.Predicate(0)).(SqlToken)
-	right := self.visitPredicate(ctx.Predicate(1)).(SqlToken)
+	left := dealSqlToken(self.visitPredicate(ctx.Predicate(0)))
+	right := dealSqlToken(self.visitPredicate(ctx.Predicate(1)))
 	var name string
 	if n := ctx.NOT(); n != nil {
 		name = "not_like"
@@ -934,8 +956,8 @@ func (self *visitor) doVisitRegexpPredicate(ctx *parser.RegexpPredicateContext) 
 	/*
 		predicate NOT? regex=(REGEXP | RLIKE) predicate
 	*/
-	left := self.visitPredicate(ctx.Predicate(0)).(SqlToken)
-	right := self.visitPredicate(ctx.Predicate(1)).(SqlToken)
+	left := dealSqlToken(self.visitPredicate(ctx.Predicate(0)))
+	right := dealSqlToken(self.visitPredicate(ctx.Predicate(1)))
 	var name string
 	if n := ctx.NOT(); n != nil {
 		name = "not_regexp"
@@ -1037,7 +1059,7 @@ func (self *visitor) doVisitCaseFunctionCall(ctx *parser.CaseFunctionCallContext
 	if ctx.ELSE() != nil {
 		args = append(args, &CaseItem{
 			Condition: nil,
-			Value:     self.doVisitFunctionArg(ctx.FunctionArg().(*parser.FunctionArgContext)).(SqlToken),
+			Value:     dealSqlToken(self.doVisitFunctionArg(ctx.FunctionArg().(*parser.FunctionArgContext))),
 		})
 	}
 
@@ -1063,7 +1085,7 @@ func (self *visitor) doVisitCaseVarFunctionCall(ctx *parser.CaseVarFunctionCallC
 	if ctx.ELSE() != nil {
 		args = append(args, &CaseItem{
 			Condition: nil,
-			Value:     self.doVisitFunctionArg(ctx.FunctionArg().(*parser.FunctionArgContext)).(SqlToken),
+			Value:     dealSqlToken(self.doVisitFunctionArg(ctx.FunctionArg().(*parser.FunctionArgContext))),
 		})
 	}
 
@@ -1092,8 +1114,8 @@ func (self *visitor) doVisitCaseFuncAlternative(ctx *parser.CaseFuncAlternativeC
 		THEN consequent=functionArg
 	*/
 	return &CaseItem{
-		Condition: self.doVisitFunctionArg(ctx.FunctionArg(0).(*parser.FunctionArgContext)).(SqlToken),
-		Value:     self.doVisitFunctionArg(ctx.FunctionArg(1).(*parser.FunctionArgContext)).(SqlToken),
+		Condition: dealSqlToken(self.doVisitFunctionArg(ctx.FunctionArg(0).(*parser.FunctionArgContext))),
+		Value:     dealSqlToken(self.doVisitFunctionArg(ctx.FunctionArg(1).(*parser.FunctionArgContext))),
 	}
 }
 
@@ -1115,7 +1137,7 @@ func (self *visitor) doVisitUnaryExpressionAtom(ctx *parser.UnaryExpressionAtomC
 	/*
 		unaryOperator expressionAtom
 	*/
-	expressionAtom := self.visitExpressionAtom(ctx.ExpressionAtom()).(SqlToken)
+	expressionAtom := dealSqlToken(self.visitExpressionAtom(ctx.ExpressionAtom()))
 	op := self.doVisitUnaryOperator(ctx.UnaryOperator().(*parser.UnaryOperatorContext))
 	return &Func{Name: op, Args: []interface{}{expressionAtom}}
 }
@@ -1135,7 +1157,7 @@ func (self *visitor) doVisitNestedExpressionAtom(ctx *parser.NestedExpressionAto
 	var args []SqlToken
 	items := ctx.AllExpression()
 	for _, item := range items {
-		args = append(args, self.visitExpression(item).(SqlToken))
+		args = append(args, dealSqlToken(self.visitExpression(item)))
 	}
 	return args
 }
@@ -1152,8 +1174,8 @@ func (self *visitor) doVisitMathExpressionAtom(ctx *parser.MathExpressionAtomCon
 	/*
 		left=expressionAtom mathOperator right=expressionAtom
 	*/
-	left := self.visitExpressionAtom(ctx.ExpressionAtom(0)).(SqlToken)
-	right := self.visitExpressionAtom(ctx.ExpressionAtom(1)).(SqlToken)
+	left := dealSqlToken(self.visitExpressionAtom(ctx.ExpressionAtom(0)))
+	right := dealSqlToken(self.visitExpressionAtom(ctx.ExpressionAtom(1)))
 	op := self.doVisitMathOperator(ctx.MathOperator().(*parser.MathOperatorContext))
 	return &Func{Name: op, Args: []interface{}{left, right}}
 }
@@ -1169,8 +1191,8 @@ func (self *visitor) doVisitPriorityMathExpressionAtom(ctx *parser.PriorityMathE
 	/*
 		left=expressionAtom op=('*'|'/'|'%'| DIV | MOD) right=expressionAtom
 	*/
-	left := self.visitExpressionAtom(ctx.ExpressionAtom(0)).(SqlToken)
-	right := self.visitExpressionAtom(ctx.ExpressionAtom(1)).(SqlToken)
+	left := dealSqlToken(self.visitExpressionAtom(ctx.ExpressionAtom(0)))
+	right := dealSqlToken(self.visitExpressionAtom(ctx.ExpressionAtom(1)))
 	return &Func{Name: ctx.GetOp().GetText(), Args: []interface{}{left, right}}
 }
 

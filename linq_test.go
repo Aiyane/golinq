@@ -13,11 +13,11 @@ var DB *gorm.DB
 func TestLinq(t *testing.T) {
 	// 注册 sql 驱动
 	Catcher.Register()
-	// 创建数据库对象
-	createDataBase()
 	// 获取 db 对象
 	db, _ := gorm.Open(DriverName, "test.db")
 	DB = db
+	// 创建数据库对象
+	createDataBase()
 	RegisterDB2DataBase(map[string]types.DataSources{
 		"test.db": DataBase,
 	})
@@ -32,6 +32,7 @@ func TestLinq(t *testing.T) {
 	company = Company{
 		Name: "oppo",
 	}
+	RegisterType((*Company)(nil))
 	DB.Create(&company)
 	var company2 Company
 	DB.First(&company2, "id=?", 5)

@@ -54,13 +54,13 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/Aiyane/golinq/api.go (89.7%)</option>
+				<option value="file0">github.com/Aiyane/golinq/api.go (90.3%)</option>
 				
 				<option value="file1">github.com/Aiyane/golinq/conn.go (54.2%)</option>
 				
 				<option value="file2">github.com/Aiyane/golinq/driver.go (71.4%)</option>
 				
-				<option value="file3">github.com/Aiyane/golinq/functions/base.go (10.0%)</option>
+				<option value="file3">github.com/Aiyane/golinq/functions/base.go (11.3%)</option>
 				
 				<option value="file4">github.com/Aiyane/golinq/functions/custom-func.go (38.1%)</option>
 				
@@ -76,7 +76,7 @@
 				
 				<option value="file10">github.com/Aiyane/golinq/gen/mysql_lexer.go (100.0%)</option>
 				
-				<option value="file11">github.com/Aiyane/golinq/gen/mysql_parser.go (47.9%)</option>
+				<option value="file11">github.com/Aiyane/golinq/gen/mysql_parser.go (47.8%)</option>
 				
 				<option value="file12">github.com/Aiyane/golinq/gen/mysqlparser_base_listener.go (0.0%)</option>
 				
@@ -88,11 +88,11 @@
 				
 				<option value="file16">github.com/Aiyane/golinq/interpreters/env.go (100.0%)</option>
 				
-				<option value="file17">github.com/Aiyane/golinq/interpreters/insert-interp.go (68.5%)</option>
+				<option value="file17">github.com/Aiyane/golinq/interpreters/insert-interp.go (88.0%)</option>
 				
-				<option value="file18">github.com/Aiyane/golinq/interpreters/record.go (95.9%)</option>
+				<option value="file18">github.com/Aiyane/golinq/interpreters/record.go (73.1%)</option>
 				
-				<option value="file19">github.com/Aiyane/golinq/interpreters/select-common-interp.go (94.8%)</option>
+				<option value="file19">github.com/Aiyane/golinq/interpreters/select-common-interp.go (93.8%)</option>
 				
 				<option value="file20">github.com/Aiyane/golinq/interpreters/select-group-base-interp.go (85.8%)</option>
 				
@@ -110,7 +110,7 @@
 				
 				<option value="file27">github.com/Aiyane/golinq/interpreters/update-order-interp.go (87.1%)</option>
 				
-				<option value="file28">github.com/Aiyane/golinq/interpreters/utils.go (24.4%)</option>
+				<option value="file28">github.com/Aiyane/golinq/interpreters/utils.go (37.4%)</option>
 				
 				<option value="file29">github.com/Aiyane/golinq/response.go (44.4%)</option>
 				
@@ -120,13 +120,13 @@
 				
 				<option value="file32">github.com/Aiyane/golinq/sql-parser/nodes.go (11.8%)</option>
 				
-				<option value="file33">github.com/Aiyane/golinq/sql-parser/visitor.go (66.2%)</option>
+				<option value="file33">github.com/Aiyane/golinq/sql-parser/visitor.go (65.3%)</option>
 				
-				<option value="file34">github.com/Aiyane/golinq/stmt.go (74.7%)</option>
+				<option value="file34">github.com/Aiyane/golinq/stmt.go (75.9%)</option>
 				
 				<option value="file35">github.com/Aiyane/golinq/test/test_util.go (76.3%)</option>
 				
-				<option value="file36">github.com/Aiyane/golinq/test_util.go (82.1%)</option>
+				<option value="file36">github.com/Aiyane/golinq/test_util.go (82.9%)</option>
 				
 				</select>
 			</div>
@@ -187,7 +187,7 @@ func init() <span class="cov8" title="1">{
         interpreters.SimpleUpdateInterp = &amp;interpreters.SimpleUpdate{}
         interpreters.OrderUpdateInterp = &amp;interpreters.OrderUpdate{}
 
-        interpreters.TagString = "json"
+        interpreters.TagString = "sql"
 }</span>
 
 func getSqlTree(sqlExpr string) *sql_parser.Tree <span class="cov8" title="1">{
@@ -217,9 +217,9 @@ func SqlRun(sqlString string, dataSources types.DataSources, recordStructName st
         defer func() </span><span class="cov8" title="1">{
                 lock.Unlock()
                 if e := recover(); e != nil </span><span class="cov0" title="0">{
-                        //panic(e)
-                        logrus.Errorf("error=%+v, stack=%s", e, string(getStack()))
-                }</span>
+                        panic(e)</span>
+                        //logrus.Errorf("error=%+v, stack=%s", e, string(getStack()))
+                }
         }()
         <span class="cov8" title="1">once.Do(func() </span><span class="cov8" title="1">{
                 lock = sync.Mutex{}
@@ -302,10 +302,6 @@ func (*deleteInterp) Interp(sqlString string, sqlTree *sql_parser.Tree, dataSour
         return interpreters.DeleteInterp(sqlTree.DeleteStatement, dataSources)
 }</span>
 
-type Entitier interface {
-        TableName() string
-}
-
 // 通过结构体列表构建 DataSources 类型
 func NewDataSources(_dataSources ...interface{}) types.DataSources <span class="cov8" title="1">{
         dataSources := make(types.DataSources, len(_dataSources))
@@ -316,7 +312,7 @@ func NewDataSources(_dataSources ...interface{}) types.DataSources <span class="
                 for i := 0; i &lt; l; i++ </span><span class="cov8" title="1">{
                         data = append(data, v.Index(i).Interface())
                 }</span>
-                <span class="cov8" title="1">dataSources[v.Index(0).Interface().(Entitier).TableName()] = data</span>
+                <span class="cov8" title="1">dataSources[v.Index(0).Interface().(types.Entitier).TableName()] = data</span>
         }
         <span class="cov8" title="1">return dataSources</span>
 }
@@ -324,7 +320,20 @@ func NewDataSources(_dataSources ...interface{}) types.DataSources <span class="
 // 注册结果集/原数据集元素类型
 // elem = (*T)(nil)
 func RegisterType(elem interface{}) <span class="cov8" title="1">{
-        interpreters.RegisterType(elem)
+        t := reflect.TypeOf(elem)
+        table := reflect.New(t.Elem()).Interface()
+        switch v := table.(type) </span>{
+        case types.Entitier:<span class="cov8" title="1">
+                interpreters.TypeRegistry[v.TableName()] = t</span>
+        default:<span class="cov8" title="1">
+                e := t.Elem()
+                interpreters.TypeRegistry[e.Name()] = t</span>
+        }
+}
+
+// 清空注册的类型
+func ClearType() <span class="cov8" title="1">{
+        interpreters.TypeRegistry = make(map[string]reflect.Type, 0)
 }</span>
 
 // 注册内建函数
@@ -542,20 +551,20 @@ var (
                 NoNum:   toSelf,
         }
         Name2Type = map[string]NumType{
-                "uint":    Uint,
-                "uint8":   Uint8,
-                "uint16":  Uint16,
-                "uint32":  Uint32,
-                "uint64":  Uint64,
-                "int":     Int,
-                "int8":    Int8,
-                "int16":   Int16,
-                "int32":   Int32,
-                "int64":   Int64,
-                "float32": Float32,
-                "float64": Float64,
-                "string":  String,
-                "time":    Time,
+                "uint":       Uint,
+                "uint8":      Uint8,
+                "uint16":     Uint16,
+                "uint32":     Uint32,
+                "uint64":     Uint64,
+                "int":        Int,
+                "int8":       Int8,
+                "int16":      Int16,
+                "int32":      Int32,
+                "int64":      Int64,
+                "float32":    Float32,
+                "float64":    Float64,
+                "string":     String,
+                "time.Time":  Time,
         }
 )
 
@@ -874,6 +883,8 @@ func ToInt(i interface{}) interface{} <span class="cov8" title="1">{
                 }</span> else<span class="cov0" title="0"> {
                         return 0
                 }</span>
+        case nil:<span class="cov0" title="0">
+                return 0</span>
         default:<span class="cov0" title="0">
                 logrus.Errorf("[ToInt] type error: v1[%T]", v)
                 panic("type err")</span>
@@ -919,6 +930,8 @@ func toInt8(i interface{}) interface{} <span class="cov0" title="0">{
                 }</span> else<span class="cov0" title="0"> {
                         return int8(0)
                 }</span>
+        case nil:<span class="cov0" title="0">
+                return int8(0)</span>
         default:<span class="cov0" title="0">
                 logrus.Errorf("[toInt8] type error: v1[%T]", v)
                 panic("type err")</span>
@@ -964,6 +977,8 @@ func toInt16(i interface{}) interface{} <span class="cov0" title="0">{
                 }</span> else<span class="cov0" title="0"> {
                         return int16(0)
                 }</span>
+        case nil:<span class="cov0" title="0">
+                return int16(0)</span>
         default:<span class="cov0" title="0">
                 logrus.Errorf("[toInt16] type error: v1[%T]", v)
                 panic("type err")</span>
@@ -1009,6 +1024,8 @@ func toInt32(i interface{}) interface{} <span class="cov0" title="0">{
                 }</span> else<span class="cov0" title="0"> {
                         return int32(0)
                 }</span>
+        case nil:<span class="cov0" title="0">
+                return int32(0)</span>
         default:<span class="cov0" title="0">
                 logrus.Errorf("[toInt32] type error: v1[%T]", v)
                 panic("type err")</span>
@@ -1054,6 +1071,8 @@ func toInt64(i interface{}) interface{} <span class="cov0" title="0">{
                 }</span> else<span class="cov0" title="0"> {
                         return int64(0)
                 }</span>
+        case nil:<span class="cov0" title="0">
+                return int64(0)</span>
         default:<span class="cov0" title="0">
                 logrus.Errorf("[toInt64] type error: v1[%T]", v)
                 panic("type err")</span>
@@ -1099,6 +1118,8 @@ func toFloat32(i interface{}) interface{} <span class="cov8" title="1">{
                 }</span> else<span class="cov0" title="0"> {
                         return float32(0)
                 }</span>
+        case nil:<span class="cov0" title="0">
+                return float32(0)</span>
         default:<span class="cov0" title="0">
                 logrus.Errorf("[toFloat32] type error: v1[%T]", v)
                 panic("type err")</span>
@@ -1144,6 +1165,8 @@ func toFloat64(i interface{}) interface{} <span class="cov8" title="1">{
                 }</span> else<span class="cov0" title="0"> {
                         return float64(0)
                 }</span>
+        case nil:<span class="cov0" title="0">
+                return float64(0)</span>
         default:<span class="cov0" title="0">
                 logrus.Errorf("[toFloat64] type error: v1[%T]", v)
                 panic("type err")</span>
@@ -1189,6 +1212,8 @@ func toUint(i interface{}) interface{} <span class="cov0" title="0">{
                 }</span> else<span class="cov0" title="0"> {
                         return uint(0)
                 }</span>
+        case nil:<span class="cov0" title="0">
+                return uint(0)</span>
         default:<span class="cov0" title="0">
                 logrus.Errorf("[toUint] type error: v1[%T]", v)
                 panic("type err")</span>
@@ -1234,6 +1259,8 @@ func toUint8(i interface{}) interface{} <span class="cov0" title="0">{
                 }</span> else<span class="cov0" title="0"> {
                         return uint8(0)
                 }</span>
+        case nil:<span class="cov0" title="0">
+                return uint8(0)</span>
         default:<span class="cov0" title="0">
                 logrus.Errorf("[toUint8] type error: v1[%T]", v)
                 panic("type err")</span>
@@ -1279,6 +1306,8 @@ func toUint16(i interface{}) interface{} <span class="cov0" title="0">{
                 }</span> else<span class="cov0" title="0"> {
                         return uint16(0)
                 }</span>
+        case nil:<span class="cov0" title="0">
+                return uint16(0)</span>
         default:<span class="cov0" title="0">
                 logrus.Errorf("[toUint16] type error: v1[%T]", v)
                 panic("type err")</span>
@@ -1324,6 +1353,8 @@ func toUint32(i interface{}) interface{} <span class="cov0" title="0">{
                 }</span> else<span class="cov0" title="0"> {
                         return uint32(0)
                 }</span>
+        case nil:<span class="cov0" title="0">
+                return uint32(0)</span>
         default:<span class="cov0" title="0">
                 logrus.Errorf("[toUint32] type error: v1[%T]", v)
                 panic("type err")</span>
@@ -1369,34 +1400,40 @@ func toUint64(i interface{}) interface{} <span class="cov0" title="0">{
                 }</span> else<span class="cov0" title="0"> {
                         return uint64(0)
                 }</span>
+        case nil:<span class="cov0" title="0">
+                return uint64(0)</span>
         default:<span class="cov0" title="0">
                 logrus.Errorf("[toUint64] type error: v1[%T]", v)
                 panic("type err")</span>
         }
 }
 
-func toTime(stringTime interface{}) interface{} <span class="cov0" title="0">{
+func toTime(stringTime interface{}) interface{} <span class="cov8" title="1">{
         switch v := stringTime.(type) </span>{
         case time.Time:<span class="cov0" title="0">
                 return v</span>
-        case string:<span class="cov0" title="0">
+        case string:<span class="cov8" title="1">
                 l := len([]rune(v))
-                if l == 19 </span><span class="cov0" title="0">{
-                        theTime, err := time.ParseInLocation(timeLayout, v, time.Local)
+                if l == 10 </span><span class="cov0" title="0">{
+                        theTime, err := time.ParseInLocation(dateLayout, v, time.Local)
                         if err != nil </span><span class="cov0" title="0">{
                                 logrus.Errorf("[toTime] has error the stringTime len: %v", l)
                                 panic(err)</span>
                         }
                         <span class="cov0" title="0">return theTime</span>
                 }
-                <span class="cov0" title="0">theTime, err := time.ParseInLocation(dateLayout, v, time.Local)
-                if err != nil </span><span class="cov0" title="0">{
-                        logrus.Errorf("[toTime] has error the stringTime len: %v", l)
-                        panic(err)</span>
+                <span class="cov8" title="1">if l &gt;= 19 </span><span class="cov8" title="1">{
+                        theTime, err := time.ParseInLocation(timeLayout, v[:19], time.Local)
+                        if err != nil </span><span class="cov0" title="0">{
+                                logrus.Errorf("[toTime] has error the stringTime len: %v", l)
+                                panic(err)</span>
+                        }
+                        <span class="cov8" title="1">return theTime</span>
                 }
-                <span class="cov0" title="0">return theTime</span>
+        case nil:<span class="cov0" title="0">
+                return time.Time{}</span>
         }
-        <span class="cov0" title="0">logrus.Errorf("[toTime] has error the stringTime: %v", stringTime)
+        <span class="cov0" title="0">logrus.Errorf("[toTime] has error the stringTime: %T", stringTime)
         panic("type error")</span>
 }
 </pre>
@@ -8929,7 +8966,7 @@ func (s *FunctionArgContext) FullColumnName() IFullColumnNameContext <span class
                 return nil
         }</span>
 
-        <span class="cov8" title="1">return t.(IFullColumnNameContext)</span>
+        <span class="cov0" title="0">return t.(IFullColumnNameContext)</span>
 }
 
 func (s *FunctionArgContext) FunctionCall() IFunctionCallContext <span class="cov8" title="1">{
@@ -9017,9 +9054,9 @@ func (p *MySqlParser) FunctionArg() (localctx IFunctionArgContext) <span class="
                 }</span>
 
 
-        case 2:<span class="cov8" title="1">
+        case 2:<span class="cov0" title="0">
                 p.EnterOuterAlt(localctx, 2)
-                </span><span class="cov8" title="1">{
+                </span><span class="cov0" title="0">{
                         p.SetState(379)
                         p.FullColumnName()
                 }</span>
@@ -14392,7 +14429,7 @@ var (
         expr                   *sql_parser.EXPR                // 语句
         TypeRegistry           = make(map[string]reflect.Type) // 类型字典
         hadSetStructFieldValue types.UsedKey                   // 是否设置过 struct 属性值
-        tmpFieldValue          map[string]interface{}          // 临时属性值
+        tmpFieldValue          map[string]interface{}          // 调整重名时保存临时字段名的值
         preFieldName           map[string]struct{}             // 前一个select语句的 select 字段名
 )
 
@@ -14463,23 +14500,25 @@ func InsertInterp(insertExpr *sql_parser.InsertExpr, dataSources types.DataSourc
                 values = records
         }</span>
         <span class="cov8" title="1">_, isStruct := TypeRegistry[table]
+        tmpFieldValue = make(map[string]interface{}, 10)
+        hadSetStructFieldValue = make(types.UsedKey, 10)
         insertRecordsIterator(values, func(record interface{}) </span><span class="cov8" title="1">{
                 switch r := record.(type) </span>{
                 case map[string]interface{}:<span class="cov8" title="1">
-                        if isStruct </span><span class="cov0" title="0">{
+                        if isStruct </span><span class="cov8" title="1">{
                                 resRecord := newStruct(table)
-                                for _, column := range columns </span><span class="cov0" title="0">{
-                                        if column == "id" </span><span class="cov0" title="0">{
+                                for _, column := range columns </span><span class="cov8" title="1">{
+                                        if column == "id" </span><span class="cov8" title="1">{
                                                 maxId = r[column]
                                         }</span>
-                                        <span class="cov0" title="0">setValue(resRecord, column, r[column], false)</span>
+                                        <span class="cov8" title="1">setValue(resRecord, column, r[column], false)</span>
                                 }
-                                <span class="cov0" title="0">if !hasId </span><span class="cov0" title="0">{
+                                <span class="cov8" title="1">if !hasId </span><span class="cov0" title="0">{
                                         newId := functions.Add(maxId, 1)
                                         setValue(resRecord, "id", newId, false)
                                         maxId = newId
                                 }</span>
-                                <span class="cov0" title="0">dataSources[table] = append(dataSources[table], resRecord)</span>
+                                <span class="cov8" title="1">dataSources[table] = append(dataSources[table], resRecord)</span>
                         } else<span class="cov8" title="1"> {
                                 resRecord := make(map[string]interface{})
                                 for _, column := range columns </span><span class="cov8" title="1">{
@@ -14496,20 +14535,20 @@ func InsertInterp(insertExpr *sql_parser.InsertExpr, dataSources types.DataSourc
                                 <span class="cov8" title="1">dataSources[table] = append(dataSources[table], resRecord)</span>
                         }
                 case []sql_parser.SqlToken:<span class="cov8" title="1">
-                        if isStruct </span><span class="cov0" title="0">{
+                        if isStruct </span><span class="cov8" title="1">{
                                 resRecord := newStruct(table)
-                                for i, column := range columns </span><span class="cov0" title="0">{
-                                        if column == "id" </span><span class="cov0" title="0">{
+                                for i, column := range columns </span><span class="cov8" title="1">{
+                                        if column == "id" </span><span class="cov8" title="1">{
                                                 maxId = visit(r[i], nil, -1)
                                         }</span>
-                                        <span class="cov0" title="0">setValue(resRecord, column, visit(r[i], nil, -1), false)</span>
+                                        <span class="cov8" title="1">setValue(resRecord, column, visit(r[i], nil, -1), false)</span>
                                 }
-                                <span class="cov0" title="0">if !hasId </span><span class="cov0" title="0">{
+                                <span class="cov8" title="1">if !hasId </span><span class="cov8" title="1">{
                                         newId := functions.Add(maxId, 1)
                                         setValue(resRecord, "id", newId, false)
                                         maxId = newId
                                 }</span>
-                                <span class="cov0" title="0">dataSources[table] = append(dataSources[table], resRecord)</span>
+                                <span class="cov8" title="1">dataSources[table] = append(dataSources[table], resRecord)</span>
                         } else<span class="cov8" title="1"> {
                                 resRecord := make(map[string]interface{})
                                 for i, column := range columns </span><span class="cov8" title="1">{
@@ -14518,7 +14557,7 @@ func InsertInterp(insertExpr *sql_parser.InsertExpr, dataSources types.DataSourc
                                         }</span>
                                         <span class="cov8" title="1">resRecord[column] = visit(r[i], nil, -1)</span>
                                 }
-                                <span class="cov8" title="1">if !hasId </span><span class="cov8" title="1">{
+                                <span class="cov8" title="1">if !hasId </span><span class="cov0" title="0">{
                                         newId := functions.Add(maxId, 1)
                                         resRecord["id"] = newId
                                         maxId = newId
@@ -14560,29 +14599,20 @@ func getIdSet(records types.Records) (maxId interface{}, idSet map[interface{}]s
 		<pre class="file" id="file18" style="display: none">package interpreters
 
 import (
+        "database/sql"
+        "database/sql/driver"
+        "fmt"
         "github.com/Aiyane/golinq/functions"
         "github.com/Aiyane/golinq/types"
+        "github.com/sirupsen/logrus"
         "reflect"
         "strings"
+        "time"
 )
 
 var TagString string
 
-func RegisterType(elem interface{}) <span class="cov8" title="1">{
-        t := reflect.TypeOf(elem)
-        e := t.Elem()
-        TypeRegistry[e.Name()] = t
-}</span>
-
-func newStruct(name string) interface{} <span class="cov8" title="1">{
-        elem, ok := TypeRegistry[name]
-        if !ok </span><span class="cov0" title="0">{
-                return nil
-        }</span>
-        <span class="cov8" title="1">return reflect.New(elem.Elem()).Interface()</span>
-}
-
-// 设置 struct/map 的值
+// 赋值 设置 struct/map 的值
 // isDelete 删除 key 的值
 func setValue(resRecord interface{}, key string, value interface{}, isDelete bool) <span class="cov8" title="1">{
         if isStruct(resRecord) </span><span class="cov8" title="1">{
@@ -14592,16 +14622,24 @@ func setValue(resRecord interface{}, key string, value interface{}, isDelete boo
         }</span>
 }
 
-// 为 map 赋值
+// 赋值 为 map 赋值
 func setMapVlaue(resRecord interface{}, key string, value interface{}, isDelete bool) <span class="cov8" title="1">{
         if isDelete </span><span class="cov8" title="1">{
                 delete(resRecord.(map[string]interface{}), key)
         }</span> else<span class="cov8" title="1"> {
-                resRecord.(map[string]interface{})[key] = value
-        }</span>
+                if val, ok := value.(driver.Valuer); ok </span><span class="cov0" title="0">{
+                        s, err := val.Value()
+                        if err != nil </span><span class="cov0" title="0">{
+                                panic(err)</span>
+                        }
+                        <span class="cov0" title="0">resRecord.(map[string]interface{})[key] = []byte(fmt.Sprintf("%v", s))</span>
+                } else<span class="cov8" title="1"> {
+                        resRecord.(map[string]interface{})[key] = value
+                }</span>
+        }
 }
 
-// 为 struct 赋值
+// 赋值 为 struct 赋值
 func setStructValue(resRecord interface{}, key string, value interface{}, isDelete bool) <span class="cov8" title="1">{
         t := reflect.TypeOf(resRecord)
         v := reflect.ValueOf(resRecord)
@@ -14609,7 +14647,14 @@ func setStructValue(resRecord interface{}, key string, value interface{}, isDele
                 t = t.Elem()
                 v = v.Elem()
         }</span>
-        <span class="cov8" title="1">if t.Name() == types.RecordStructName </span><span class="cov8" title="1">{
+        <span class="cov8" title="1">var resSetName string
+        switch table := resRecord.(type) </span>{
+        case types.Entitier:<span class="cov8" title="1">
+                resSetName = table.TableName()</span>
+        default:<span class="cov8" title="1">
+                resSetName = t.Name()</span>
+        }
+        <span class="cov8" title="1">if resSetName == types.RecordStructName </span><span class="cov8" title="1">{
                 if isDelete </span><span class="cov8" title="1">{
                         delete(hadSetStructFieldValue, key)
                         delete(tmpFieldValue, key)
@@ -14617,29 +14662,58 @@ func setStructValue(resRecord interface{}, key string, value interface{}, isDele
                         hadSetStructFieldValue[key] = struct{}{}
                 }</span>
         }
-        <span class="cov8" title="1">if _, exist := t.FieldByName(key); exist </span><span class="cov0" title="0">{
-                // 设置过属性值
-                hadSetStructFieldValue[key] = struct{}{}
-                setFieldValue(v.FieldByName(key), value)
+        <span class="cov8" title="1">camelKey := camelString(key)
+        if _, exist := t.FieldByName(camelKey); exist </span><span class="cov8" title="1">{
+                setExistValue(camelKey, value, v, isDelete)
         }</span> else<span class="cov8" title="1"> {
-                setValueFromTag(t, v, key, value, isDelete)
-                tmpFieldValue[key] = value
+                if _, exist := t.FieldByName("ID"); exist &amp;&amp; camelKey == "Id" </span><span class="cov0" title="0">{
+                        setExistValue("ID", value, v, isDelete)
+                }</span> else<span class="cov8" title="1"> {
+                        setValueFromTag(t, v, key, value, isDelete)
+                        tmpFieldValue[key] = value
+                }</span>
+        }
+}
+
+// 赋值 存在的字段
+func setExistValue(camelKey string, value interface{}, v reflect.Value, isDelete bool) <span class="cov8" title="1">{
+        // 设置过属性值
+        hadSetStructFieldValue[camelKey] = struct{}{}
+        field := v.FieldByName(camelKey)
+        if isDelete || value == nil </span><span class="cov8" title="1">{
+                field.Set(reflect.Zero(field.Type()))
+        }</span> else<span class="cov8" title="1"> {
+                setFieldValue(field, value)
         }</span>
 }
 
-// 从 tag 名中设置值
+// 赋值 从 tag 名中设置值
 func setValueFromTag(resRecordOfType reflect.Type, resRecordOfValue reflect.Value, key string, value interface{}, isDelete bool) <span class="cov8" title="1">{
         fieldNum := resRecordOfType.NumField()
+        var tags []string
+        var name string
         for i := 0; i &lt; fieldNum; i++ </span><span class="cov8" title="1">{
-                name := resRecordOfType.Field(i).Name
-                tags := strings.Split(string(resRecordOfType.Field(i).Tag), "\"")
-                if len(tags) &gt; 1 </span><span class="cov8" title="1">{
+                if isNestStruct(resRecordOfValue.Field(i)) </span><span class="cov0" title="0">{
+                        structField := resRecordOfValue.Field(i).Type()
+                        for j := 0; j &lt; structField.NumField(); j++ </span><span class="cov0" title="0">{
+                                name = structField.Field(j).Name
+                                if name == camelString(key) </span><span class="cov0" title="0">{
+                                        setFieldValue(resRecordOfValue.Field(i).Field(j), value)
+                                        return
+                                }</span>
+                                <span class="cov0" title="0">tags = strings.Split(string(structField.Field(j).Tag), "\"")</span>
+                        }
+                } else<span class="cov8" title="1"> {
+                        name = resRecordOfType.Field(i).Name
+                        tags = strings.Split(string(resRecordOfType.Field(i).Tag), "\"")
+                }</span>
+                <span class="cov8" title="1">if len(tags) &gt; 1 </span><span class="cov8" title="1">{
                         for j, tag := range tags </span><span class="cov8" title="1">{
                                 if (tag == TagString+":" || tag == " "+TagString+":") &amp;&amp; len(tags) &gt;= j+2 </span><span class="cov8" title="1">{
                                         if tags[j+1] == key </span><span class="cov8" title="1">{
                                                 field := resRecordOfValue.FieldByName(name)
                                                 // 设置过属性值
-                                                if isDelete || value == nil </span><span class="cov8" title="1">{
+                                                if isDelete || value == nil </span><span class="cov0" title="0">{
                                                         field.Set(reflect.Zero(field.Type()))
                                                 }</span> else<span class="cov8" title="1"> {
                                                         setFieldValue(field, value)
@@ -14651,27 +14725,135 @@ func setValueFromTag(resRecordOfType reflect.Type, resRecordOfValue reflect.Valu
                         }
                 }
         }
+        // 没有的字段不用设置值
 }
 
-// 为结构体字段赋值 field 结构体字段, key 字段名, v 值
+// 赋值 为结构体字段赋值 field 结构体字段, key 字段名, v 值
+// mysql 只有三类数据类型: 数值、字符串、日期
+// golang 缺少泛型
 func setFieldValue(field reflect.Value, v interface{}) <span class="cov8" title="1">{
         typeName := field.Type().String()
-        t, ok := functions.Name2Type[typeName]
+        realTypeName := strings.TrimLeft(typeName, "*")
+        t, ok := functions.Name2Type[realTypeName]
         if !ok </span><span class="cov8" title="1">{
-                field.Set(reflect.ValueOf(v))
-        }</span> else<span class="cov8" title="1"> {
-                realV := functions.Type2Func[t](reflect.ValueOf(v).Interface())
-                field.Set(reflect.ValueOf(realV))
-        }</span>
+                logrus.Warnf("[setFieldValue] type %v not exist in Name2Type", typeName)
+                if val, ok := field.Addr().Interface().(sql.Scanner); ok </span><span class="cov0" title="0">{
+                        err := val.Scan([]byte(fmt.Sprintf("%v", v)))
+                        if err != nil </span><span class="cov0" title="0">{
+                                panic(err)</span>
+                        }
+                } else<span class="cov8" title="1"> {
+                        field.Set(reflect.ValueOf(v))
+                }</span>
+        } else<span class="cov8" title="1"> {
+                v = functions.Type2Func[t](reflect.ValueOf(v).Interface())
+                numOfAddress := len(typeName) - len(realTypeName)
+                for i := 0; i &lt; numOfAddress; i++ </span><span class="cov0" title="0">{
+                        switch val := v.(type) </span>{
+                        case float32:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case float64:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case int:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case int8:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case int16:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case int32:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case int64:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case uint:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case uint8:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case uint16:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case uint32:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case uint64:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case string:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        case time.Time:<span class="cov0" title="0">
+                                v = &amp;val</span>
+                        }
+                }
+                <span class="cov8" title="1">field.Set(reflect.ValueOf(v))</span>
+        }
 }
 
-// 从 map 中取值
+// 取值
+func recordValue(record interface{}, key string) (interface{}, bool) <span class="cov8" title="1">{
+        if isStruct(record) </span><span class="cov8" title="1">{
+                return valueFromStruct(record, key)
+        }</span>
+        <span class="cov8" title="1">return valueFromMap(record, key)</span>
+}
+
+// 取值 返回 {key:value}
+func recordKeyValue(record interface{}, fn func(name string, value interface{})) <span class="cov8" title="1">{
+        if !isStruct(record) </span><span class="cov8" title="1">{
+                for k, v := range record.(map[string]interface{}) </span><span class="cov8" title="1">{
+                        fn(k, v)
+                }</span>
+        } else<span class="cov8" title="1"> {
+                t := reflect.TypeOf(record)
+                v := reflect.ValueOf(record)
+                if t.Kind() == reflect.Ptr </span><span class="cov8" title="1">{
+                        t = t.Elem()
+                        v = v.Elem()
+                }</span>
+                <span class="cov8" title="1">var tagName string
+                var tags []string
+                fieldNum := t.NumField()
+                for i := 0; i &lt; fieldNum; i++ </span><span class="cov8" title="1">{
+                        name := t.Field(i).Name
+                        if isNestStruct(v.Field(i)) </span><span class="cov0" title="0">{
+                                structField := v.Field(i).Type()
+                                for j := 0; j &lt; structField.NumField(); j++ </span><span class="cov0" title="0">{
+                                        newName := structField.Field(j).Name
+                                        tagName = snakeString(newName)
+                                        tags = strings.Split(string(structField.Field(j).Tag), "\"")
+                                        fn(getTagName(tagName, tags), reflect.Indirect(reflect.ValueOf(record)).FieldByName(newName).Interface())
+                                }</span>
+                        } else<span class="cov8" title="1"> {
+                                tagName = snakeString(t.Field(i).Name)
+                                tags = strings.Split(string(t.Field(i).Tag), "\"")
+                                fn(getTagName(tagName, tags), reflect.Indirect(reflect.ValueOf(record)).FieldByName(name).Interface())
+                        }</span>
+                }
+        }
+}
+
+func getTagName(tagName string, tags []string) string <span class="cov8" title="1">{
+        if len(tags) &gt; 1 </span><span class="cov8" title="1">{
+                for j, tag := range tags </span><span class="cov8" title="1">{
+                        if (tag == TagString+":" || tag == " "+TagString+":") &amp;&amp; len(tags) &gt;= j+2 </span><span class="cov8" title="1">{
+                                return tags[j+1]
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return tagName</span>
+}
+
+// 判断是否是嵌套结构
+func isNestStruct(v reflect.Value) bool <span class="cov8" title="1">{
+        name := v.Type().Name()
+        if v.Type().Kind() == reflect.Struct &amp;&amp; name != "Time" </span><span class="cov0" title="0">{
+                return true
+        }</span>
+        <span class="cov8" title="1">return false</span>
+}
+
+// 取值 从 map 中取值
 func valueFromMap(record interface{}, key string) (interface{}, bool) <span class="cov8" title="1">{
         v, ok := record.(map[string]interface{})[key]
         return v, ok
 }</span>
 
-// 从 struct 中取值
+// 取值 从 struct 中取值
 func valueFromStruct(record interface{}, key string) (interface{}, bool) <span class="cov8" title="1">{
         t := reflect.TypeOf(record)
         if t.Kind() == reflect.Ptr </span><span class="cov8" title="1">{
@@ -14683,8 +14865,12 @@ func valueFromStruct(record interface{}, key string) (interface{}, bool) <span c
         }</span> else<span class="cov8" title="1"> {
                 had = false
         }</span>
-        <span class="cov8" title="1">if _, exist := t.FieldByName(key); exist </span><span class="cov0" title="0">{
-                return reflect.Indirect(reflect.ValueOf(record)).FieldByName(key).Interface(), had
+        <span class="cov8" title="1">camelKey := camelString(key)
+        if _, exist := t.FieldByName(camelKey); exist </span><span class="cov8" title="1">{
+                return valueFromField(reflect.Indirect(reflect.ValueOf(record)).FieldByName(camelKey)), had
+        }</span>
+        <span class="cov8" title="1">if _, exist := t.FieldByName("ID"); exist &amp;&amp; camelKey == "Id" </span><span class="cov0" title="0">{
+                return valueFromField(reflect.Indirect(reflect.ValueOf(record)).FieldByName("ID")), had
         }</span>
         <span class="cov8" title="1">fieldNum := t.NumField()
         for i := 0; i &lt; fieldNum; i++ </span><span class="cov8" title="1">{
@@ -14693,18 +14879,43 @@ func valueFromStruct(record interface{}, key string) (interface{}, bool) <span c
                 if len(tags) &gt; 1 </span><span class="cov8" title="1">{
                         for j, tag := range tags </span><span class="cov8" title="1">{
                                 if (tag == TagString+":" || tag == " "+TagString+":") &amp;&amp; len(tags) &gt;= j+2 </span><span class="cov8" title="1">{
-                                        if tags[j+1] == key </span><span class="cov8" title="1">{
-                                                return reflect.Indirect(reflect.ValueOf(record)).FieldByName(name).Interface(), had
+                                        if tags[j+1] == key </span><span class="cov0" title="0">{
+                                                return valueFromField(reflect.Indirect(reflect.ValueOf(record)).FieldByName(name)), had
                                         }</span>
                                         <span class="cov8" title="1">break</span>
                                 }
                         }
                 }
+                <span class="cov8" title="1">if snakeString(name) == key </span><span class="cov0" title="0">{
+                        return valueFromField(reflect.Indirect(reflect.ValueOf(record)).FieldByName(name)), had
+                }</span>
         }
         <span class="cov8" title="1">if had </span><span class="cov8" title="1">{
                 return tmpFieldValue[key], had
         }</span>
         <span class="cov8" title="1">return nil, had</span>
+}
+
+// 取值 通过字段名取值
+func valueFromField(field reflect.Value) interface{} <span class="cov8" title="1">{
+        value := field.Interface()
+        if val, ok := value.(driver.Valuer); ok </span><span class="cov0" title="0">{
+                s, err := val.Value()
+                if err != nil </span><span class="cov0" title="0">{
+                        panic(err)</span>
+                }
+                <span class="cov0" title="0">return []byte(fmt.Sprintf("%v", s))</span>
+        }
+        <span class="cov8" title="1">return value</span>
+}
+
+// 实例化结构体
+func newStruct(name string) interface{} <span class="cov8" title="1">{
+        elem, ok := TypeRegistry[name]
+        if !ok </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">return reflect.New(elem.Elem()).Interface()</span>
 }
 
 // 判断是 struct
@@ -14717,43 +14928,6 @@ func isStruct(record interface{}) bool <span class="cov8" title="1">{
                 return false
         }</span>
         <span class="cov8" title="1">return true</span>
-}
-
-// 取值
-func recordValue(record interface{}, key string) (interface{}, bool) <span class="cov8" title="1">{
-        if isStruct(record) </span><span class="cov8" title="1">{
-                return valueFromStruct(record, key)
-        }</span>
-        <span class="cov8" title="1">return valueFromMap(record, key)</span>
-}
-
-// 返回 {key:value}
-func recordKeyValue(record interface{}, fn func(name string, value interface{})) <span class="cov8" title="1">{
-        if !isStruct(record) </span><span class="cov8" title="1">{
-                for k, v := range record.(map[string]interface{}) </span><span class="cov8" title="1">{
-                        fn(k, v)
-                }</span>
-        } else<span class="cov8" title="1"> {
-                t := reflect.TypeOf(record)
-                if t.Kind() == reflect.Ptr </span><span class="cov8" title="1">{
-                        t = t.Elem()
-                }</span>
-                <span class="cov8" title="1">fieldNum := t.NumField()
-                for i := 0; i &lt; fieldNum; i++ </span><span class="cov8" title="1">{
-                        name := t.Field(i).Name
-                        tagName := t.Field(i).Name
-                        tags := strings.Split(string(t.Field(i).Tag), "\"")
-                        if len(tags) &gt; 1 </span><span class="cov8" title="1">{
-                                for j, tag := range tags </span><span class="cov8" title="1">{
-                                        if (tag == TagString+":" || tag == " "+TagString+":") &amp;&amp; len(tags) &gt;= j+2 </span><span class="cov8" title="1">{
-                                                tagName = tags[j+1]
-                                                break</span>
-                                        }
-                                }
-                        }
-                        <span class="cov8" title="1">fn(tagName, reflect.Indirect(reflect.ValueOf(record)).FieldByName(name).Interface())</span>
-                }
-        }
 }
 </pre>
 		
@@ -14788,7 +14962,7 @@ func visit(sqlExpr interface{}, dataSources interface{}, index int) interface{} 
         <span class="cov8" title="1">switch subExpr := sqlExpr.(type) </span>{
         case *sql_parser.Const:<span class="cov8" title="1">
                 return visitConst(subExpr)</span>
-        case *sql_parser.Var:<span class="cov8" title="1">
+        case *sql_parser.Var:<span class="cov0" title="0">
                 return subExpr.Value.Value</span>
         }
         <span class="cov0" title="0">return nil</span>
@@ -15004,7 +15178,7 @@ func visitVar(sqlExpr *sql_parser.Var, instanceDict types.InstanceDict) interfac
                 record = instanceDict[singleTableName]
                 record, ok = recordValue(record, name)
                 // 解决没有引号引起的var错误
-                if record == nil &amp;&amp; !ok </span><span class="cov8" title="1">{
+                if record == nil &amp;&amp; !ok </span><span class="cov0" title="0">{
                         return name
                 }</span>
         }
@@ -16390,9 +16564,9 @@ func compareValue(item interface{}, item2 interface{}) int <span class="cov8" ti
         case []interface{}:<span class="cov8" title="1">
                 for i, v1 := range item1 </span><span class="cov8" title="1">{
                         temRes := compareValue(v1, item2.([]interface{})[i])
-                        if temRes == 1 </span><span class="cov0" title="0">{
+                        if temRes == 1 </span><span class="cov8" title="1">{
                                 return 1
-                        }</span> else<span class="cov8" title="1"> if temRes == -1 </span><span class="cov8" title="1">{
+                        }</span> else<span class="cov0" title="0"> if temRes == -1 </span><span class="cov0" title="0">{
                                 return -1
                         }</span>
                 }
@@ -16608,6 +16782,49 @@ func deepCopyInstanceDict(instanceDict types.InstanceDict, tableName string, rec
 func useStruct() bool <span class="cov8" title="1">{
         return types.RecordStructName != ""
 }</span>
+
+// snake string, XxYy to xx_yy , XxYY to xx_yy
+func snakeString(s string) string <span class="cov8" title="1">{
+        data := make([]byte, 0, len(s)*2)
+        j := false
+        num := len(s)
+        for i := 0; i &lt; num; i++ </span><span class="cov8" title="1">{
+                d := s[i]
+                if i &gt; 0 &amp;&amp; d &gt;= 'A' &amp;&amp; d &lt;= 'Z' &amp;&amp; j </span><span class="cov8" title="1">{
+                        data = append(data, '_')
+                }</span>
+                <span class="cov8" title="1">if d != '_' </span><span class="cov8" title="1">{
+                        j = true
+                }</span>
+                <span class="cov8" title="1">data = append(data, d)</span>
+        }
+        <span class="cov8" title="1">return strings.ToLower(string(data[:]))</span>
+}
+
+// camel string, xx_yy to XxYy
+func camelString(s string) string <span class="cov8" title="1">{
+        data := make([]byte, 0, len(s))
+        j := false
+        k := false
+        num := len(s) - 1
+        for i := 0; i &lt;= num; i++ </span><span class="cov8" title="1">{
+                d := s[i]
+                if k == false &amp;&amp; d &gt;= 'A' &amp;&amp; d &lt;= 'Z' </span><span class="cov0" title="0">{
+                        k = true
+                }</span>
+                <span class="cov8" title="1">if d &gt;= 'a' &amp;&amp; d &lt;= 'z' &amp;&amp; (j || k == false) </span><span class="cov8" title="1">{
+                        d = d - 32
+                        j = false
+                        k = true
+                }</span>
+                <span class="cov8" title="1">if k &amp;&amp; d == '_' &amp;&amp; num &gt; i &amp;&amp; s[i+1] &gt;= 'a' &amp;&amp; s[i+1] &lt;= 'z' </span><span class="cov8" title="1">{
+                        j = true
+                        continue</span>
+                }
+                <span class="cov8" title="1">data = append(data, d)</span>
+        }
+        <span class="cov8" title="1">return string(data[:])</span>
+}
 </pre>
 		
 		<pre class="file" id="file29" style="display: none">package golinq
@@ -17144,7 +17361,7 @@ func (self *visitor) doVisitInsertStatement(ctx *parser.InsertStatementContext) 
         case *Link:<span class="cov8" title="1">
                 link = v</span>
         default:<span class="cov0" title="0">
-                logrus.Errorf("[doVisitInsertStatement] insertStatementValue no such type [%v]", insertStatementValue)
+                logrus.Errorf("[doVisitInsertStatement] insertStatementValue no such type [%T]", insertStatementValue)
                 return</span>
         }
         <span class="cov8" title="1">self.InsertStatement = &amp;InsertExpr{
@@ -17201,7 +17418,7 @@ func (self *visitor) doVisitExpressionOrDefault(ctx *parser.ExpressionOrDefaultC
                 expression | DEFAULT
         */
         if expression := ctx.Expression(); expression != nil </span><span class="cov8" title="1">{
-                return self.visitExpression(expression).(SqlToken)
+                return dealSqlToken(self.visitExpression(expression))
         }</span>
         <span class="cov0" title="0">return Default</span>
 }
@@ -17410,7 +17627,7 @@ func (self *visitor) doVisitSelectExpressionElement(ctx *parser.SelectExpression
         /*
                 expression (AS? ID)?
         */
-        name := self.visitExpression(ctx.Expression()).(SqlToken)
+        name := dealSqlToken(self.visitExpression(ctx.Expression()))
 
         alis := ctx.ID()
         if alis == nil </span><span class="cov0" title="0">{
@@ -17449,10 +17666,24 @@ func dealWhere(_whereExpr interface{}) *Func <span class="cov8" title="1">{
         case []SqlToken:<span class="cov8" title="1">
                 whereExpr = realWhereExpr[0].(*Func)</span>
         default:<span class="cov0" title="0">
-                logrus.Errorf("[doVisitFromClause] no such type [%T]", whereExpr)
+                logrus.Errorf("[dealWhere] no such type [%T]", whereExpr)
                 return nil</span>
         }
         <span class="cov8" title="1">return whereExpr</span>
+}
+
+func dealSqlToken(_arg interface{}) SqlToken <span class="cov8" title="1">{
+        var arg SqlToken
+        switch expr := _arg.(type) </span>{
+        case SqlToken:<span class="cov8" title="1">
+                arg = expr</span>
+        case []SqlToken:<span class="cov0" title="0">
+                arg = expr[0]</span>
+        default:<span class="cov0" title="0">
+                logrus.Errorf("[dealSqlToken] no such type [%T]", arg)
+                return nil</span>
+        }
+        <span class="cov8" title="1">return arg</span>
 }
 
 func (self *visitor) doVisitFromClause(ctx *parser.FromClauseContext) *From <span class="cov8" title="1">{
@@ -17701,7 +17932,7 @@ func (self *visitor) doVisitOrderByClause(ctx *parser.OrderByClauseContext) []Sq
         var args []SqlToken
         expressions := ctx.AllOrderByExpression()
         for _, expression := range expressions </span><span class="cov8" title="1">{
-                args = append(args, self.doVisitOrderByExpression(expression.(*parser.OrderByExpressionContext)).(SqlToken))
+                args = append(args, dealSqlToken(self.doVisitOrderByExpression(expression.(*parser.OrderByExpressionContext))))
         }</span>
         <span class="cov8" title="1">return args</span>
 }
@@ -17762,8 +17993,8 @@ func (self *visitor) doVisitLogicalExpression(ctx *parser.LogicalExpressionConte
         /*
                 expression logicalOperator expression
         */
-        left := self.visitExpression(ctx.Expression(0)).(SqlToken)
-        right := self.visitExpression(ctx.Expression(1)).(SqlToken)
+        left := dealSqlToken(self.visitExpression(ctx.Expression(0)))
+        right := dealSqlToken(self.visitExpression(ctx.Expression(1)))
         var args []interface{}
         args = append(args, left)
         args = append(args, right)
@@ -17777,7 +18008,7 @@ func (self *visitor) doVisitIsExpression(ctx *parser.IsExpressionContext) *Func 
         /*
                 predicate IS NOT? testValue=(TRUE | FALSE | UNKNOWN)
         */
-        left := self.visitPredicate(ctx.Predicate()).(SqlToken)
+        left := dealSqlToken(self.visitPredicate(ctx.Predicate()))
         val := ctx.GetTestValue().GetText()
         var right SqlToken
         var name string
@@ -17811,7 +18042,7 @@ func (self *visitor) doVisitInPredicate(ctx *parser.InPredicateContext) *Func <s
         /*
                 predicate NOT? IN '(' (selectStatement | expressions) ')':
         */
-        left := self.visitPredicate(ctx.Predicate()).(SqlToken)
+        left := dealSqlToken(self.visitPredicate(ctx.Predicate()))
         var name string
         var right interface{}
         selectStatement := ctx.SelectStatement()
@@ -17842,7 +18073,7 @@ func (self *visitor) doVisitExpressions(ctx *parser.ExpressionsContext) []SqlTok
         */
         var args []SqlToken
         for _, expression := range ctx.AllExpression() </span><span class="cov8" title="1">{
-                args = append(args, self.visitExpression(expression).(SqlToken))
+                args = append(args, dealSqlToken(self.visitExpression(expression)))
         }</span>
         <span class="cov8" title="1">return args</span>
 }
@@ -17851,14 +18082,22 @@ func (self *visitor) doVisitIsNullPredicate(ctx *parser.IsNullPredicateContext) 
         /*
                 predicate IS nullNotnull
         */
-        left := self.visitPredicate(ctx.Predicate()).(SqlToken)
+        left := dealSqlToken(self.visitPredicate(ctx.Predicate()))
         right := self.doVisitNullNotnull(ctx.NullNotnull().(*parser.NullNotnullContext))
-        name := "is"
-        return &amp;Func{
-                Name: name,
-                Args: []interface{}{left, right},
+        switch v := right.(type) </span>{
+        case *Const:<span class="cov0" title="0">
+                return &amp;Func{
+                        Name: "is",
+                        Args: []interface{}{left, right},
+                }</span>
+        case *Func:<span class="cov0" title="0">
+                v.Name = "is_not"
+                v.Args = []interface{}{left, v.Args[0]}
+                return v</span>
         }
-}</span>
+        <span class="cov0" title="0">logrus.Errorf("[doVisitIsNullPredicate] no such type [%T]", right)
+        return nil</span>
+}
 
 func (self *visitor) doVisitNullNotnull(ctx *parser.NullNotnullContext) SqlToken <span class="cov0" title="0">{
         /*
@@ -17889,9 +18128,9 @@ func (self *visitor) doVisitBinaryComparasionPredicate(ctx *parser.BinaryCompara
         /*
                 left=predicate comparisonOperator right=predicate
         */
-        left := self.visitPredicate(ctx.Predicate(0)).(SqlToken)
+        left := dealSqlToken(self.visitPredicate(ctx.Predicate(0)))
         op := self.doVisitComparisonOperator(ctx.ComparisonOperator().(*parser.ComparisonOperatorContext))
-        right := self.visitPredicate(ctx.Predicate(1)).(SqlToken)
+        right := dealSqlToken(self.visitPredicate(ctx.Predicate(1)))
         return &amp;Func{
                 Name: op,
                 Args: []interface{}{left, right},
@@ -17940,7 +18179,7 @@ func (self *visitor) doVisitSubqueryComparasionPredicate(ctx *parser.SubqueryCom
         /*
                 predicate comparisonOperator quantifier=(ALL | ANY | SOME) '(' selectStatement ')'
         */
-        left := self.visitPredicate(ctx.Predicate()).(SqlToken)
+        left := dealSqlToken(self.visitPredicate(ctx.Predicate()))
         op := self.doVisitComparisonOperator(ctx.ComparisonOperator().(*parser.ComparisonOperatorContext))
         selectStatement := self.visitSelectStatement(ctx.SelectStatement())
         return &amp;Func{
@@ -17953,9 +18192,9 @@ func (self *visitor) doVisitBetweenPredicate(ctx *parser.BetweenPredicateContext
         /*
                 predicate NOT? BETWEEN predicate AND predicate
         */
-        left := self.visitPredicate(ctx.Predicate(0)).(SqlToken)
-        start := self.visitPredicate(ctx.Predicate(1)).(SqlToken)
-        end := self.visitPredicate(ctx.Predicate(2)).(SqlToken)
+        left := dealSqlToken(self.visitPredicate(ctx.Predicate(0)))
+        start := dealSqlToken(self.visitPredicate(ctx.Predicate(1)))
+        end := dealSqlToken(self.visitPredicate(ctx.Predicate(2)))
         var name string
         if n := ctx.NOT(); n != nil </span><span class="cov0" title="0">{
                 name = "not_between"
@@ -17972,8 +18211,8 @@ func (self *visitor) doVisitLikePredicate(ctx *parser.LikePredicateContext) *Fun
         /*
                 predicate NOT? LIKE predicate
         */
-        left := self.visitPredicate(ctx.Predicate(0)).(SqlToken)
-        right := self.visitPredicate(ctx.Predicate(1)).(SqlToken)
+        left := dealSqlToken(self.visitPredicate(ctx.Predicate(0)))
+        right := dealSqlToken(self.visitPredicate(ctx.Predicate(1)))
         var name string
         if n := ctx.NOT(); n != nil </span><span class="cov0" title="0">{
                 name = "not_like"
@@ -17990,8 +18229,8 @@ func (self *visitor) doVisitRegexpPredicate(ctx *parser.RegexpPredicateContext) 
         /*
                 predicate NOT? regex=(REGEXP | RLIKE) predicate
         */
-        left := self.visitPredicate(ctx.Predicate(0)).(SqlToken)
-        right := self.visitPredicate(ctx.Predicate(1)).(SqlToken)
+        left := dealSqlToken(self.visitPredicate(ctx.Predicate(0)))
+        right := dealSqlToken(self.visitPredicate(ctx.Predicate(1)))
         var name string
         if n := ctx.NOT(); n != nil </span><span class="cov0" title="0">{
                 name = "not_regexp"
@@ -18093,7 +18332,7 @@ func (self *visitor) doVisitCaseFunctionCall(ctx *parser.CaseFunctionCallContext
         <span class="cov8" title="1">if ctx.ELSE() != nil </span><span class="cov8" title="1">{
                 args = append(args, &amp;CaseItem{
                         Condition: nil,
-                        Value:     self.doVisitFunctionArg(ctx.FunctionArg().(*parser.FunctionArgContext)).(SqlToken),
+                        Value:     dealSqlToken(self.doVisitFunctionArg(ctx.FunctionArg().(*parser.FunctionArgContext))),
                 })
         }</span>
 
@@ -18119,7 +18358,7 @@ func (self *visitor) doVisitCaseVarFunctionCall(ctx *parser.CaseVarFunctionCallC
         <span class="cov8" title="1">if ctx.ELSE() != nil </span><span class="cov0" title="0">{
                 args = append(args, &amp;CaseItem{
                         Condition: nil,
-                        Value:     self.doVisitFunctionArg(ctx.FunctionArg().(*parser.FunctionArgContext)).(SqlToken),
+                        Value:     dealSqlToken(self.doVisitFunctionArg(ctx.FunctionArg().(*parser.FunctionArgContext))),
                 })
         }</span>
 
@@ -18133,7 +18372,7 @@ func (self *visitor) doVisitFunctionArg(ctx *parser.FunctionArgContext) interfac
         if c := ctx.Constant(); c != nil </span><span class="cov8" title="1">{
                 return self.doVisitConstant(c.(*parser.ConstantContext))
         }</span>
-        <span class="cov8" title="1">if f := ctx.FullColumnName(); f != nil </span><span class="cov8" title="1">{
+        <span class="cov8" title="1">if f := ctx.FullColumnName(); f != nil </span><span class="cov0" title="0">{
                 return self.doVisitFullColumnName(f.(*parser.FullColumnNameContext))
         }</span>
         <span class="cov8" title="1">if fc := ctx.FunctionCall(); fc != nil </span><span class="cov0" title="0">{
@@ -18148,8 +18387,8 @@ func (self *visitor) doVisitCaseFuncAlternative(ctx *parser.CaseFuncAlternativeC
                 THEN consequent=functionArg
         */
         return &amp;CaseItem{
-                Condition: self.doVisitFunctionArg(ctx.FunctionArg(0).(*parser.FunctionArgContext)).(SqlToken),
-                Value:     self.doVisitFunctionArg(ctx.FunctionArg(1).(*parser.FunctionArgContext)).(SqlToken),
+                Condition: dealSqlToken(self.doVisitFunctionArg(ctx.FunctionArg(0).(*parser.FunctionArgContext))),
+                Value:     dealSqlToken(self.doVisitFunctionArg(ctx.FunctionArg(1).(*parser.FunctionArgContext))),
         }
 }</span>
 
@@ -18171,7 +18410,7 @@ func (self *visitor) doVisitUnaryExpressionAtom(ctx *parser.UnaryExpressionAtomC
         /*
                 unaryOperator expressionAtom
         */
-        expressionAtom := self.visitExpressionAtom(ctx.ExpressionAtom()).(SqlToken)
+        expressionAtom := dealSqlToken(self.visitExpressionAtom(ctx.ExpressionAtom()))
         op := self.doVisitUnaryOperator(ctx.UnaryOperator().(*parser.UnaryOperatorContext))
         return &amp;Func{Name: op, Args: []interface{}{expressionAtom}}
 }</span>
@@ -18191,7 +18430,7 @@ func (self *visitor) doVisitNestedExpressionAtom(ctx *parser.NestedExpressionAto
         var args []SqlToken
         items := ctx.AllExpression()
         for _, item := range items </span><span class="cov8" title="1">{
-                args = append(args, self.visitExpression(item).(SqlToken))
+                args = append(args, dealSqlToken(self.visitExpression(item)))
         }</span>
         <span class="cov8" title="1">return args</span>
 }
@@ -18208,8 +18447,8 @@ func (self *visitor) doVisitMathExpressionAtom(ctx *parser.MathExpressionAtomCon
         /*
                 left=expressionAtom mathOperator right=expressionAtom
         */
-        left := self.visitExpressionAtom(ctx.ExpressionAtom(0)).(SqlToken)
-        right := self.visitExpressionAtom(ctx.ExpressionAtom(1)).(SqlToken)
+        left := dealSqlToken(self.visitExpressionAtom(ctx.ExpressionAtom(0)))
+        right := dealSqlToken(self.visitExpressionAtom(ctx.ExpressionAtom(1)))
         op := self.doVisitMathOperator(ctx.MathOperator().(*parser.MathOperatorContext))
         return &amp;Func{Name: op, Args: []interface{}{left, right}}
 }</span>
@@ -18225,8 +18464,8 @@ func (self *visitor) doVisitPriorityMathExpressionAtom(ctx *parser.PriorityMathE
         /*
                 left=expressionAtom op=('*'|'/'|'%'| DIV | MOD) right=expressionAtom
         */
-        left := self.visitExpressionAtom(ctx.ExpressionAtom(0)).(SqlToken)
-        right := self.visitExpressionAtom(ctx.ExpressionAtom(1)).(SqlToken)
+        left := dealSqlToken(self.visitExpressionAtom(ctx.ExpressionAtom(0)))
+        right := dealSqlToken(self.visitExpressionAtom(ctx.ExpressionAtom(1)))
         return &amp;Func{Name: ctx.GetOp().GetText(), Args: []interface{}{left, right}}
 }</span>
 
@@ -18405,6 +18644,7 @@ import (
         "fmt"
         "math/rand"
         "strings"
+        "time"
 )
 
 // FakeStmt  is implementation of Stmt sql interfcae
@@ -18453,6 +18693,17 @@ func (s *FakeStmt) Exec(args []driver.Value) (driver.Result, error) <span class=
         panic("Using ExecContext")</span>
 }
 
+func valueToSqlValue(v interface{}) string <span class="cov8" title="1">{
+        switch val := v.(type) </span>{
+        case time.Time:<span class="cov8" title="1">
+                return fmt.Sprintf("\"%v\"", val)</span>
+        case string:<span class="cov8" title="1">
+                return fmt.Sprintf("\"%v\"", val)</span>
+        default:<span class="cov8" title="1">
+                return fmt.Sprintf("%v", val)</span>
+        }
+}
+
 // ExecContext executes a query that doesn't return rows, such
 // as an INSERT or UPDATE.
 func (s *FakeStmt) ExecContext(ctx context.Context, args []driver.NamedValue) (driver.Result, error) <span class="cov8" title="1">{
@@ -18460,15 +18711,16 @@ func (s *FakeStmt) ExecContext(ctx context.Context, args []driver.NamedValue) (d
                 return nil, errClosed
         }</span>
 
-        <span class="cov8" title="1">if len(args) &gt; 0 </span><span class="cov8" title="1">{
+        <span class="cov8" title="1">s.q = strings.Replace(s.q, "\"", "", -1)
+        if len(args) &gt; 0 </span><span class="cov8" title="1">{
                 // Replace all "?" to "%v" and replace them with the values after
                 for i := 0; i &lt; len(args); i++ </span><span class="cov8" title="1">{
                         s.q = strings.Replace(s.q, "?", "%v", 1)
-                        s.q = fmt.Sprintf(s.q, args[i].Value)
+                        s.q = fmt.Sprintf(s.q, valueToSqlValue(args[i].Value))
                 }</span>
         }
-        <span class="cov8" title="1">s.q = strings.Replace(s.q, "\"", "", -1)
-        res := SqlRun(s.q, DB2DataBase[s.connection.db.name], "").(int)
+
+        <span class="cov8" title="1">res := SqlRun(s.q, DB2DataBase[s.connection.db.name], "").(int)
         fResp := &amp;FakeResponse{
                 Response:     make([]map[string]interface{}, 0),
                 Exceptions:   &amp;Exceptions{},
@@ -18518,17 +18770,16 @@ func (s *FakeStmt) QueryContext(ctx context.Context, args []driver.NamedValue) (
                 return nil, errClosed
         }</span>
 
-        <span class="cov8" title="1">if len(args) &gt; 0 </span><span class="cov8" title="1">{
+        <span class="cov8" title="1">s.q = strings.Replace(s.q, "\"", "", -1)
+        if len(args) &gt; 0 </span><span class="cov8" title="1">{
                 // Replace all "?" to "%v" and replace them with the values after
                 for i := 0; i &lt; len(args); i++ </span><span class="cov8" title="1">{
                         s.q = strings.Replace(s.q, "?", "%v", 1)
-                        s.q = fmt.Sprintf(s.q, args[i].Value)
+                        s.q = fmt.Sprintf(s.q, valueToSqlValue(args[i].Value))
                 }</span>
         }
 
-        <span class="cov8" title="1">s.q = strings.Replace(s.q, "\"", "", -1)
-
-        records := SqlRun(s.q, DB2DataBase[s.connection.db.name], "")
+        <span class="cov8" title="1">records := SqlRun(s.q, DB2DataBase[s.connection.db.name], "")
         var resp []map[string]interface{}
         if records == nil </span><span class="cov0" title="0">{
                 resp = make([]map[string]interface{}, 0, 0)
@@ -18797,11 +19048,13 @@ import (
         "reflect"
         "strings"
         "sync"
+        "time"
 )
 
 type Company struct {
-        Id   int    `gorm:"primary_key" json:"id"`
-        Name string `json:"name"`
+        Id         int    `gorm:"primary_key" json:"id"`
+        Name       string `json:"name"`
+        CreateTime time.Time
 }
 
 func (Company) TableName() string <span class="cov8" title="1">{
@@ -19004,7 +19257,7 @@ func fieldName2Index(value reflect.Value, name2Index map[string][]int, pre []int
         filedCount := v.NumField()
         for i := 0; i &lt; filedCount; i++ </span><span class="cov8" title="1">{
                 field := v.Type().Field(i)
-                if !ast.IsExported(field.Name) </span><span class="cov0" title="0">{
+                if !ast.IsExported(field.Name) </span><span class="cov8" title="1">{
                         continue</span>
                 }
                 <span class="cov8" title="1">fieldName := field.Name
@@ -19014,7 +19267,6 @@ func fieldName2Index(value reflect.Value, name2Index map[string][]int, pre []int
                 fieldName2Index(value.Field(i), name2Index, name2Index[fieldName], depth-1)</span>
         }
 }
-
 </pre>
 		
 		</div>

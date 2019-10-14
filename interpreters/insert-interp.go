@@ -28,6 +28,8 @@ func InsertInterp(insertExpr *sql_parser.InsertExpr, dataSources types.DataSourc
 		values = records
 	}
 	_, isStruct := TypeRegistry[table]
+	tmpFieldValue = make(map[string]interface{}, 10)
+	hadSetStructFieldValue = make(types.UsedKey, 10)
 	insertRecordsIterator(values, func(record interface{}) {
 		switch r := record.(type) {
 		case map[string]interface{}:

@@ -8,11 +8,13 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Company struct {
-	Id   int    `gorm:"primary_key" json:"id"`
-	Name string `json:"name"`
+	Id         int    `gorm:"primary_key" json:"id"`
+	Name       string `json:"name"`
+	CreateTime time.Time
 }
 
 func (Company) TableName() string {
@@ -225,4 +227,3 @@ func fieldName2Index(value reflect.Value, name2Index map[string][]int, pre []int
 		fieldName2Index(value.Field(i), name2Index, name2Index[fieldName], depth-1)
 	}
 }
-

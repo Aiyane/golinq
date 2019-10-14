@@ -45,7 +45,7 @@ func init() {
 	interpreters.SimpleUpdateInterp = &interpreters.SimpleUpdate{}
 	interpreters.OrderUpdateInterp = &interpreters.OrderUpdate{}
 
-	interpreters.TagString = "json"
+	interpreters.TagString = "sql"
 }
 
 func getSqlTree(sqlExpr string) *sql_parser.Tree {
@@ -75,8 +75,8 @@ func SqlRun(sqlString string, dataSources types.DataSources, recordStructName st
 	defer func() {
 		lock.Unlock()
 		if e := recover(); e != nil {
-			//panic(e)
-			logrus.Errorf("error=%+v, stack=%s", e, string(getStack()))
+			panic(e)
+			//logrus.Errorf("error=%+v, stack=%s", e, string(getStack()))
 		}
 	}()
 	once.Do(func() {
@@ -160,10 +160,6 @@ func (*deleteInterp) Interp(sqlString string, sqlTree *sql_parser.Tree, dataSour
 	return interpreters.DeleteInterp(sqlTree.DeleteStatement, dataSources)
 }
 
-type Entitier interface {
-	TableName() string
-}
-
 // 通过结构体列表构建 DataSources 类型
 func NewDataSources(_dataSources ...interface{}) types.DataSources {
 	dataSources := make(types.DataSources, len(_dataSources))
@@ -174,7 +170,7 @@ func NewDataSources(_dataSources ...interface{}) types.DataSources {
 		for i := 0; i < l; i++ {
 			data = append(data, v.Index(i).Interface())
 		}
-		dataSources[v.Index(0).Interface().(Entitier).TableName()] = data
+		dataSources[v.Index(0).Interface().(types.Entitier).TableName()] = data
 	}
 	return dataSources
 }
@@ -182,7 +178,20 @@ func NewDataSources(_dataSources ...interface{}) types.DataSources {
 // 注册结果集/原数据集元素类型
 // elem = (*T)(nil)
 func RegisterType(elem interface{}) {
-	interpreters.RegisterType(elem)
+	t := reflect.TypeOf(elem)
+	table := reflect.New(t.Elem()).Interface()
+	switch v := table.(type) {
+	case types.Entitier:
+		interpreters.TypeRegistry[v.TableName()] = t
+	default:
+		e := t.Elem()
+		interpreters.TypeRegistry[e.Name()] = t
+	}
+}
+
+// 清空注册的类型
+func ClearType() {
+	interpreters.TypeRegistry = make(map[string]reflect.Type, 0)
 }
 
 // 注册内建函数

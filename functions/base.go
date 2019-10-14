@@ -46,20 +46,20 @@ var (
 		NoNum:   toSelf,
 	}
 	Name2Type = map[string]NumType{
-		"uint":    Uint,
-		"uint8":   Uint8,
-		"uint16":  Uint16,
-		"uint32":  Uint32,
-		"uint64":  Uint64,
-		"int":     Int,
-		"int8":    Int8,
-		"int16":   Int16,
-		"int32":   Int32,
-		"int64":   Int64,
-		"float32": Float32,
-		"float64": Float64,
-		"string":  String,
-		"time":    Time,
+		"uint":       Uint,
+		"uint8":      Uint8,
+		"uint16":     Uint16,
+		"uint32":     Uint32,
+		"uint64":     Uint64,
+		"int":        Int,
+		"int8":       Int8,
+		"int16":      Int16,
+		"int32":      Int32,
+		"int64":      Int64,
+		"float32":    Float32,
+		"float64":    Float64,
+		"string":     String,
+		"time.Time":  Time,
 	}
 )
 
@@ -378,6 +378,8 @@ func ToInt(i interface{}) interface{} {
 		} else {
 			return 0
 		}
+	case nil:
+		return 0
 	default:
 		logrus.Errorf("[ToInt] type error: v1[%T]", v)
 		panic("type err")
@@ -423,6 +425,8 @@ func toInt8(i interface{}) interface{} {
 		} else {
 			return int8(0)
 		}
+	case nil:
+		return int8(0)
 	default:
 		logrus.Errorf("[toInt8] type error: v1[%T]", v)
 		panic("type err")
@@ -468,6 +472,8 @@ func toInt16(i interface{}) interface{} {
 		} else {
 			return int16(0)
 		}
+	case nil:
+		return int16(0)
 	default:
 		logrus.Errorf("[toInt16] type error: v1[%T]", v)
 		panic("type err")
@@ -513,6 +519,8 @@ func toInt32(i interface{}) interface{} {
 		} else {
 			return int32(0)
 		}
+	case nil:
+		return int32(0)
 	default:
 		logrus.Errorf("[toInt32] type error: v1[%T]", v)
 		panic("type err")
@@ -558,6 +566,8 @@ func toInt64(i interface{}) interface{} {
 		} else {
 			return int64(0)
 		}
+	case nil:
+		return int64(0)
 	default:
 		logrus.Errorf("[toInt64] type error: v1[%T]", v)
 		panic("type err")
@@ -603,6 +613,8 @@ func toFloat32(i interface{}) interface{} {
 		} else {
 			return float32(0)
 		}
+	case nil:
+		return float32(0)
 	default:
 		logrus.Errorf("[toFloat32] type error: v1[%T]", v)
 		panic("type err")
@@ -648,6 +660,8 @@ func toFloat64(i interface{}) interface{} {
 		} else {
 			return float64(0)
 		}
+	case nil:
+		return float64(0)
 	default:
 		logrus.Errorf("[toFloat64] type error: v1[%T]", v)
 		panic("type err")
@@ -693,6 +707,8 @@ func toUint(i interface{}) interface{} {
 		} else {
 			return uint(0)
 		}
+	case nil:
+		return uint(0)
 	default:
 		logrus.Errorf("[toUint] type error: v1[%T]", v)
 		panic("type err")
@@ -738,6 +754,8 @@ func toUint8(i interface{}) interface{} {
 		} else {
 			return uint8(0)
 		}
+	case nil:
+		return uint8(0)
 	default:
 		logrus.Errorf("[toUint8] type error: v1[%T]", v)
 		panic("type err")
@@ -783,6 +801,8 @@ func toUint16(i interface{}) interface{} {
 		} else {
 			return uint16(0)
 		}
+	case nil:
+		return uint16(0)
 	default:
 		logrus.Errorf("[toUint16] type error: v1[%T]", v)
 		panic("type err")
@@ -828,6 +848,8 @@ func toUint32(i interface{}) interface{} {
 		} else {
 			return uint32(0)
 		}
+	case nil:
+		return uint32(0)
 	default:
 		logrus.Errorf("[toUint32] type error: v1[%T]", v)
 		panic("type err")
@@ -873,6 +895,8 @@ func toUint64(i interface{}) interface{} {
 		} else {
 			return uint64(0)
 		}
+	case nil:
+		return uint64(0)
 	default:
 		logrus.Errorf("[toUint64] type error: v1[%T]", v)
 		panic("type err")
@@ -885,21 +909,25 @@ func toTime(stringTime interface{}) interface{} {
 		return v
 	case string:
 		l := len([]rune(v))
-		if l == 19 {
-			theTime, err := time.ParseInLocation(timeLayout, v, time.Local)
+		if l == 10 {
+			theTime, err := time.ParseInLocation(dateLayout, v, time.Local)
 			if err != nil {
 				logrus.Errorf("[toTime] has error the stringTime len: %v", l)
 				panic(err)
 			}
 			return theTime
 		}
-		theTime, err := time.ParseInLocation(dateLayout, v, time.Local)
-		if err != nil {
-			logrus.Errorf("[toTime] has error the stringTime len: %v", l)
-			panic(err)
+		if l >= 19 {
+			theTime, err := time.ParseInLocation(timeLayout, v[:19], time.Local)
+			if err != nil {
+				logrus.Errorf("[toTime] has error the stringTime len: %v", l)
+				panic(err)
+			}
+			return theTime
 		}
-		return theTime
+	case nil:
+		return time.Time{}
 	}
-	logrus.Errorf("[toTime] has error the stringTime: %v", stringTime)
+	logrus.Errorf("[toTime] has error the stringTime: %T", stringTime)
 	panic("type error")
 }

@@ -2,6 +2,10 @@ package types
 
 import parser "github.com/Aiyane/golinq/sql-parser"
 
+type Entitier interface {
+	TableName() string
+}
+
 type Interp interface {
 	Interp(sqlString string, sqlTree *parser.Tree, dataSources DataSources, recordStructName string) interface{}
 }

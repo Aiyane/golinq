@@ -794,6 +794,7 @@ func TestInsertExpr(t *testing.T) {
 }
 
 func TestInsertSelect(t *testing.T) {
+	golinq.ClearType()
 	sql := "INSERT company (`id`, `name`) SELECT id, name FROM company WHERE id = 1"
 	dataSources := newData()
 	res := golinq.SqlRun(sql, dataSources, "")

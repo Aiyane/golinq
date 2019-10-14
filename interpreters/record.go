@@ -1,29 +1,20 @@
 package interpreters
 
 import (
+	"database/sql"
+	"database/sql/driver"
+	"fmt"
 	"github.com/Aiyane/golinq/functions"
 	"github.com/Aiyane/golinq/types"
+	"github.com/sirupsen/logrus"
 	"reflect"
 	"strings"
+	"time"
 )
 
 var TagString string
 
-func RegisterType(elem interface{}) {
-	t := reflect.TypeOf(elem)
-	e := t.Elem()
-	TypeRegistry[e.Name()] = t
-}
-
-func newStruct(name string) interface{} {
-	elem, ok := TypeRegistry[name]
-	if !ok {
-		return nil
-	}
-	return reflect.New(elem.Elem()).Interface()
-}
-
-// 设置 struct/map 的值
+// 赋值 设置 struct/map 的值
 // isDelete 删除 key 的值
 func setValue(resRecord interface{}, key string, value interface{}, isDelete bool) {
 	if isStruct(resRecord) {
@@ -33,16 +24,24 @@ func setValue(resRecord interface{}, key string, value interface{}, isDelete boo
 	}
 }
 
-// 为 map 赋值
+// 赋值 为 map 赋值
 func setMapVlaue(resRecord interface{}, key string, value interface{}, isDelete bool) {
 	if isDelete {
 		delete(resRecord.(map[string]interface{}), key)
 	} else {
-		resRecord.(map[string]interface{})[key] = value
+		if val, ok := value.(driver.Valuer); ok {
+			s, err := val.Value()
+			if err != nil {
+				panic(err)
+			}
+			resRecord.(map[string]interface{})[key] = []byte(fmt.Sprintf("%v", s))
+		} else {
+			resRecord.(map[string]interface{})[key] = value
+		}
 	}
 }
 
-// 为 struct 赋值
+// 赋值 为 struct 赋值
 func setStructValue(resRecord interface{}, key string, value interface{}, isDelete bool) {
 	t := reflect.TypeOf(resRecord)
 	v := reflect.ValueOf(resRecord)
@@ -50,7 +49,14 @@ func setStructValue(resRecord interface{}, key string, value interface{}, isDele
 		t = t.Elem()
 		v = v.Elem()
 	}
-	if t.Name() == types.RecordStructName {
+	var resSetName string
+	switch table := resRecord.(type) {
+	case types.Entitier:
+		resSetName = table.TableName()
+	default:
+		resSetName = t.Name()
+	}
+	if resSetName == types.RecordStructName {
 		if isDelete {
 			delete(hadSetStructFieldValue, key)
 			delete(tmpFieldValue, key)
@@ -58,22 +64,51 @@ func setStructValue(resRecord interface{}, key string, value interface{}, isDele
 			hadSetStructFieldValue[key] = struct{}{}
 		}
 	}
-	if _, exist := t.FieldByName(key); exist {
-		// 设置过属性值
-		hadSetStructFieldValue[key] = struct{}{}
-		setFieldValue(v.FieldByName(key), value)
+	camelKey := camelString(key)
+	if _, exist := t.FieldByName(camelKey); exist {
+		setExistValue(camelKey, value, v, isDelete)
 	} else {
-		setValueFromTag(t, v, key, value, isDelete)
-		tmpFieldValue[key] = value
+		if _, exist := t.FieldByName("ID"); exist && camelKey == "Id" {
+			setExistValue("ID", value, v, isDelete)
+		} else {
+			setValueFromTag(t, v, key, value, isDelete)
+			tmpFieldValue[key] = value
+		}
 	}
 }
 
-// 从 tag 名中设置值
+// 赋值 存在的字段
+func setExistValue(camelKey string, value interface{}, v reflect.Value, isDelete bool) {
+	// 设置过属性值
+	hadSetStructFieldValue[camelKey] = struct{}{}
+	field := v.FieldByName(camelKey)
+	if isDelete || value == nil {
+		field.Set(reflect.Zero(field.Type()))
+	} else {
+		setFieldValue(field, value)
+	}
+}
+
+// 赋值 从 tag 名中设置值
 func setValueFromTag(resRecordOfType reflect.Type, resRecordOfValue reflect.Value, key string, value interface{}, isDelete bool) {
 	fieldNum := resRecordOfType.NumField()
+	var tags []string
+	var name string
 	for i := 0; i < fieldNum; i++ {
-		name := resRecordOfType.Field(i).Name
-		tags := strings.Split(string(resRecordOfType.Field(i).Tag), "\"")
+		if isNestStruct(resRecordOfValue.Field(i)) {
+			structField := resRecordOfValue.Field(i).Type()
+			for j := 0; j < structField.NumField(); j++ {
+				name = structField.Field(j).Name
+				if name == camelString(key) {
+					setFieldValue(resRecordOfValue.Field(i).Field(j), value)
+					return
+				}
+				tags = strings.Split(string(structField.Field(j).Tag), "\"")
+			}
+		} else {
+			name = resRecordOfType.Field(i).Name
+			tags = strings.Split(string(resRecordOfType.Field(i).Tag), "\"")
+		}
 		if len(tags) > 1 {
 			for j, tag := range tags {
 				if (tag == TagString+":" || tag == " "+TagString+":") && len(tags) >= j+2 {
@@ -92,27 +127,135 @@ func setValueFromTag(resRecordOfType reflect.Type, resRecordOfValue reflect.Valu
 			}
 		}
 	}
+	// 没有的字段不用设置值
 }
 
-// 为结构体字段赋值 field 结构体字段, key 字段名, v 值
+// 赋值 为结构体字段赋值 field 结构体字段, key 字段名, v 值
+// mysql 只有三类数据类型: 数值、字符串、日期
+// golang 缺少泛型
 func setFieldValue(field reflect.Value, v interface{}) {
 	typeName := field.Type().String()
-	t, ok := functions.Name2Type[typeName]
+	realTypeName := strings.TrimLeft(typeName, "*")
+	t, ok := functions.Name2Type[realTypeName]
 	if !ok {
-		field.Set(reflect.ValueOf(v))
+		logrus.Warnf("[setFieldValue] type %v not exist in Name2Type", typeName)
+		if val, ok := field.Addr().Interface().(sql.Scanner); ok {
+			err := val.Scan([]byte(fmt.Sprintf("%v", v)))
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			field.Set(reflect.ValueOf(v))
+		}
 	} else {
-		realV := functions.Type2Func[t](reflect.ValueOf(v).Interface())
-		field.Set(reflect.ValueOf(realV))
+		v = functions.Type2Func[t](reflect.ValueOf(v).Interface())
+		numOfAddress := len(typeName) - len(realTypeName)
+		for i := 0; i < numOfAddress; i++ {
+			switch val := v.(type) {
+			case float32:
+				v = &val
+			case float64:
+				v = &val
+			case int:
+				v = &val
+			case int8:
+				v = &val
+			case int16:
+				v = &val
+			case int32:
+				v = &val
+			case int64:
+				v = &val
+			case uint:
+				v = &val
+			case uint8:
+				v = &val
+			case uint16:
+				v = &val
+			case uint32:
+				v = &val
+			case uint64:
+				v = &val
+			case string:
+				v = &val
+			case time.Time:
+				v = &val
+			}
+		}
+		field.Set(reflect.ValueOf(v))
 	}
 }
 
-// 从 map 中取值
+// 取值
+func recordValue(record interface{}, key string) (interface{}, bool) {
+	if isStruct(record) {
+		return valueFromStruct(record, key)
+	}
+	return valueFromMap(record, key)
+}
+
+// 取值 返回 {key:value}
+func recordKeyValue(record interface{}, fn func(name string, value interface{})) {
+	if !isStruct(record) {
+		for k, v := range record.(map[string]interface{}) {
+			fn(k, v)
+		}
+	} else {
+		t := reflect.TypeOf(record)
+		v := reflect.ValueOf(record)
+		if t.Kind() == reflect.Ptr {
+			t = t.Elem()
+			v = v.Elem()
+		}
+		var tagName string
+		var tags []string
+		fieldNum := t.NumField()
+		for i := 0; i < fieldNum; i++ {
+			name := t.Field(i).Name
+			if isNestStruct(v.Field(i)) {
+				structField := v.Field(i).Type()
+				for j := 0; j < structField.NumField(); j++ {
+					newName := structField.Field(j).Name
+					tagName = snakeString(newName)
+					tags = strings.Split(string(structField.Field(j).Tag), "\"")
+					fn(getTagName(tagName, tags), reflect.Indirect(reflect.ValueOf(record)).FieldByName(newName).Interface())
+				}
+			} else {
+				tagName = snakeString(t.Field(i).Name)
+				tags = strings.Split(string(t.Field(i).Tag), "\"")
+				fn(getTagName(tagName, tags), reflect.Indirect(reflect.ValueOf(record)).FieldByName(name).Interface())
+			}
+		}
+	}
+}
+
+func getTagName(tagName string, tags []string) string {
+	if len(tags) > 1 {
+		for j, tag := range tags {
+			if (tag == TagString+":" || tag == " "+TagString+":") && len(tags) >= j+2 {
+				return tags[j+1]
+			}
+		}
+	}
+	return tagName
+}
+
+// 判断是否是嵌套结构
+func isNestStruct(v reflect.Value) bool {
+	name := v.Type().Name()
+	if v.Type().Kind() == reflect.Struct && name != "Time" {
+		return true
+	}
+	return false
+}
+
+// 取值 从 map 中取值
 func valueFromMap(record interface{}, key string) (interface{}, bool) {
 	v, ok := record.(map[string]interface{})[key]
 	return v, ok
 }
 
-// 从 struct 中取值
+// 取值 从 struct 中取值
 func valueFromStruct(record interface{}, key string) (interface{}, bool) {
 	t := reflect.TypeOf(record)
 	if t.Kind() == reflect.Ptr {
@@ -124,8 +267,12 @@ func valueFromStruct(record interface{}, key string) (interface{}, bool) {
 	} else {
 		had = false
 	}
-	if _, exist := t.FieldByName(key); exist {
-		return reflect.Indirect(reflect.ValueOf(record)).FieldByName(key).Interface(), had
+	camelKey := camelString(key)
+	if _, exist := t.FieldByName(camelKey); exist {
+		return valueFromField(reflect.Indirect(reflect.ValueOf(record)).FieldByName(camelKey)), had
+	}
+	if _, exist := t.FieldByName("ID"); exist && camelKey == "Id" {
+		return valueFromField(reflect.Indirect(reflect.ValueOf(record)).FieldByName("ID")), had
 	}
 	fieldNum := t.NumField()
 	for i := 0; i < fieldNum; i++ {
@@ -135,17 +282,42 @@ func valueFromStruct(record interface{}, key string) (interface{}, bool) {
 			for j, tag := range tags {
 				if (tag == TagString+":" || tag == " "+TagString+":") && len(tags) >= j+2 {
 					if tags[j+1] == key {
-						return reflect.Indirect(reflect.ValueOf(record)).FieldByName(name).Interface(), had
+						return valueFromField(reflect.Indirect(reflect.ValueOf(record)).FieldByName(name)), had
 					}
 					break
 				}
 			}
+		}
+		if snakeString(name) == key {
+			return valueFromField(reflect.Indirect(reflect.ValueOf(record)).FieldByName(name)), had
 		}
 	}
 	if had {
 		return tmpFieldValue[key], had
 	}
 	return nil, had
+}
+
+// 取值 通过字段名取值
+func valueFromField(field reflect.Value) interface{} {
+	value := field.Interface()
+	if val, ok := value.(driver.Valuer); ok {
+		s, err := val.Value()
+		if err != nil {
+			panic(err)
+		}
+		return []byte(fmt.Sprintf("%v", s))
+	}
+	return value
+}
+
+// 实例化结构体
+func newStruct(name string) interface{} {
+	elem, ok := TypeRegistry[name]
+	if !ok {
+		return nil
+	}
+	return reflect.New(elem.Elem()).Interface()
 }
 
 // 判断是 struct
@@ -158,41 +330,4 @@ func isStruct(record interface{}) bool {
 		return false
 	}
 	return true
-}
-
-// 取值
-func recordValue(record interface{}, key string) (interface{}, bool) {
-	if isStruct(record) {
-		return valueFromStruct(record, key)
-	}
-	return valueFromMap(record, key)
-}
-
-// 返回 {key:value}
-func recordKeyValue(record interface{}, fn func(name string, value interface{})) {
-	if !isStruct(record) {
-		for k, v := range record.(map[string]interface{}) {
-			fn(k, v)
-		}
-	} else {
-		t := reflect.TypeOf(record)
-		if t.Kind() == reflect.Ptr {
-			t = t.Elem()
-		}
-		fieldNum := t.NumField()
-		for i := 0; i < fieldNum; i++ {
-			name := t.Field(i).Name
-			tagName := t.Field(i).Name
-			tags := strings.Split(string(t.Field(i).Tag), "\"")
-			if len(tags) > 1 {
-				for j, tag := range tags {
-					if (tag == TagString+":" || tag == " "+TagString+":") && len(tags) >= j+2 {
-						tagName = tags[j+1]
-						break
-					}
-				}
-			}
-			fn(tagName, reflect.Indirect(reflect.ValueOf(record)).FieldByName(name).Interface())
-		}
-	}
 }

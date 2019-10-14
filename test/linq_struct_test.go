@@ -25,10 +25,10 @@ func TestModelInsertExpr2(t *testing.T) {
 	sql := "INSERT company (`id`, `name`) VALUES (5, 'oppo')"
 	dataSources := golinq.NewDataSources(getCompanys(), getCeos(), getMobiles(), getMobilePrices())
 	golinq.RegisterType((*Company)(nil))
-	res := golinq.SqlRun(sql, dataSources, "Company")
+	res := golinq.SqlRun(sql, dataSources, "company")
 	assert.Equal(t, res, 5)
 	sql2 := "select * from company where id = 5"
-	res2 := golinq.SqlRun(sql2, dataSources, "Company").([]*Company)
+	res2 := golinq.SqlRun(sql2, dataSources, "company").([]*Company)
 	assert.Equal(t, res2[0].Id, 5)
 	assert.Equal(t, res2[0].Name, "oppo")
 }
@@ -237,7 +237,7 @@ func TestModelWhereOr2(t *testing.T) {
 		"from mobile " +
 		"where company_id = 1 OR id = 1 order by id"
 	golinq.RegisterType((*Mobile)(nil))
-	res := golinq.SqlRun(sql, golinq.NewDataSources(getCompanys(), getCeos(), getMobiles(), getMobilePrices()), "Mobile").([]*Mobile)
+	res := golinq.SqlRun(sql, golinq.NewDataSources(getCompanys(), getCeos(), getMobiles(), getMobilePrices()), "mobile").([]*Mobile)
 	r1 := &Mobile{1, "xiaomi2", 3}
 	r2 := &Mobile{4, "iphone4", 1}
 	r3 := &Mobile{5, "iphone5", 1}
@@ -273,7 +273,7 @@ func TestModelCalcWhere2(t *testing.T) {
 		"from mobile " +
 		"where company_id + id > 5 order by id, name"
 	golinq.RegisterType((*Mobile)(nil))
-	res := golinq.SqlRun(sql, golinq.NewDataSources(getCompanys(), getCeos(), getMobiles(), getMobilePrices()), "Mobile").([]*Mobile)
+	res := golinq.SqlRun(sql, golinq.NewDataSources(getCompanys(), getCeos(), getMobiles(), getMobilePrices()), "mobile").([]*Mobile)
 	r1 := &Mobile{3, "Mix2", 4}
 	r2 := &Mobile{3, "Mix2S", 4}
 	r3 := &Mobile{5, "iphone5", 1}
@@ -315,7 +315,7 @@ func TestModelAndWhere2(t *testing.T) {
 		"where company_id - id < 3 " +
 		"and company_id - id > 0 order by id, name"
 	golinq.RegisterType((*Mobile)(nil))
-	res := golinq.SqlRun(sql, golinq.NewDataSources(getCompanys(), getCeos(), getMobiles(), getMobilePrices()), "Mobile").([]*Mobile)
+	res := golinq.SqlRun(sql, golinq.NewDataSources(getCompanys(), getCeos(), getMobiles(), getMobilePrices()), "mobile").([]*Mobile)
 	r1 := &Mobile{1, "xiaomi2", 3}
 	r2 := &Mobile{2, "xiaomi3", 3}
 	r3 := &Mobile{3, "Mix2", 4}
@@ -1257,8 +1257,8 @@ var (
 )
 
 type Company struct {
-	Id   int    `sql:"id"`
-	Name string `sql:"name"`
+	Id   int
+	Name string
 }
 
 func (Company) TableName() string {

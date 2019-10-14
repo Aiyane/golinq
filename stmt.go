@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"time"
 )
 
 // FakeStmt  is implementation of Stmt sql interfcae
@@ -55,6 +56,17 @@ func (s *FakeStmt) Exec(args []driver.Value) (driver.Result, error) {
 	panic("Using ExecContext")
 }
 
+func valueToSqlValue(v interface{}) string {
+	switch val := v.(type) {
+	case time.Time:
+		return fmt.Sprintf("\"%v\"", val)
+	case string:
+		return fmt.Sprintf("\"%v\"", val)
+	default:
+		return fmt.Sprintf("%v", val)
+	}
+}
+
 // ExecContext executes a query that doesn't return rows, such
 // as an INSERT or UPDATE.
 func (s *FakeStmt) ExecContext(ctx context.Context, args []driver.NamedValue) (driver.Result, error) {
@@ -62,14 +74,15 @@ func (s *FakeStmt) ExecContext(ctx context.Context, args []driver.NamedValue) (d
 		return nil, errClosed
 	}
 
+	s.q = strings.Replace(s.q, "\"", "", -1)
 	if len(args) > 0 {
 		// Replace all "?" to "%v" and replace them with the values after
 		for i := 0; i < len(args); i++ {
 			s.q = strings.Replace(s.q, "?", "%v", 1)
-			s.q = fmt.Sprintf(s.q, args[i].Value)
+			s.q = fmt.Sprintf(s.q, valueToSqlValue(args[i].Value))
 		}
 	}
-	s.q = strings.Replace(s.q, "\"", "", -1)
+
 	res := SqlRun(s.q, DB2DataBase[s.connection.db.name], "").(int)
 	fResp := &FakeResponse{
 		Response:     make([]map[string]interface{}, 0),
@@ -120,15 +133,14 @@ func (s *FakeStmt) QueryContext(ctx context.Context, args []driver.NamedValue) (
 		return nil, errClosed
 	}
 
+	s.q = strings.Replace(s.q, "\"", "", -1)
 	if len(args) > 0 {
 		// Replace all "?" to "%v" and replace them with the values after
 		for i := 0; i < len(args); i++ {
 			s.q = strings.Replace(s.q, "?", "%v", 1)
-			s.q = fmt.Sprintf(s.q, args[i].Value)
+			s.q = fmt.Sprintf(s.q, valueToSqlValue(args[i].Value))
 		}
 	}
-
-	s.q = strings.Replace(s.q, "\"", "", -1)
 
 	records := SqlRun(s.q, DB2DataBase[s.connection.db.name], "")
 	var resp []map[string]interface{}

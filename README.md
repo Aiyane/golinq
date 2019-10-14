@@ -2,7 +2,7 @@
 
 ### 介绍
 
-一个执行 SQL 语句的 Go 工具。内置 sql 驱动，可作为 gorm 的 mock 工具。 
+一个执行 SQL 语句的 Go 工具。内置 sql 驱动，可作为 gorm 的 mock 工具。支持 model 中嵌套 struct，默认驼峰命名转蛇形命名，兼容`ID`, 支持 Time 类型，支持自定义类型(需要实现 sql.Scanner 接口与 driver.Valuer 接口)
 
 将数据库以 Go 中 map 格式保存在内存，只需 mock 数据库数据，sql 语句执行结果与数据库执行基本一致。
 
