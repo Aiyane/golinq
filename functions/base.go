@@ -11,24 +11,26 @@ type NumType int
 
 const (
 	NoNum   NumType = -1
-	Uint    NumType = 0
-	Uint8   NumType = 1
-	Uint16  NumType = 2
-	Uint32  NumType = 3
-	Uint64  NumType = 4
-	Int     NumType = 5
-	Int8    NumType = 6
-	Int16   NumType = 7
-	Int32   NumType = 8
-	Int64   NumType = 9
-	Float32 NumType = 10
-	Float64 NumType = 11
-	String  NumType = 12
-	Time    NumType = 13
+	Bool    NumType = 0
+	Uint    NumType = 1
+	Uint8   NumType = 2
+	Uint16  NumType = 3
+	Uint32  NumType = 4
+	Uint64  NumType = 5
+	Int     NumType = 6
+	Int8    NumType = 7
+	Int16   NumType = 8
+	Int32   NumType = 9
+	Int64   NumType = 10
+	Float32 NumType = 11
+	Float64 NumType = 12
+	String  NumType = 13
+	Time    NumType = 14
 )
 
 var (
 	Type2Func = map[NumType]func(interface{}) interface{}{
+		Bool:    toBool,
 		Uint:    toUint,
 		Uint8:   toUint8,
 		Uint16:  toUint16,
@@ -46,20 +48,21 @@ var (
 		NoNum:   toSelf,
 	}
 	Name2Type = map[string]NumType{
-		"uint":       Uint,
-		"uint8":      Uint8,
-		"uint16":     Uint16,
-		"uint32":     Uint32,
-		"uint64":     Uint64,
-		"int":        Int,
-		"int8":       Int8,
-		"int16":      Int16,
-		"int32":      Int32,
-		"int64":      Int64,
-		"float32":    Float32,
-		"float64":    Float64,
-		"string":     String,
-		"time.Time":  Time,
+		"bool":      Bool,
+		"uint":      Uint,
+		"uint8":     Uint8,
+		"uint16":    Uint16,
+		"uint32":    Uint32,
+		"uint64":    Uint64,
+		"int":       Int,
+		"int8":      Int8,
+		"int16":     Int16,
+		"int32":     Int32,
+		"int64":     Int64,
+		"float32":   Float32,
+		"float64":   Float64,
+		"string":    String,
+		"time.Time": Time,
 	}
 )
 
@@ -337,6 +340,45 @@ func toSelf(i interface{}) interface{} {
 
 func toString(i interface{}) interface{} {
 	return fmt.Sprintf("%v", i)
+}
+
+func toBool(i interface{}) interface{} {
+	switch v := i.(type) {
+	case float32:
+		return v != float32(0)
+	case float64:
+		return v != float64(0)
+	case int:
+		return v != 0
+	case int8:
+		return v != int8(0)
+	case int16:
+		return v != int16(0)
+	case int32:
+		return v != int32(0)
+	case int64:
+		return v != int64(0)
+	case uint:
+		return v != uint(0)
+	case uint8:
+		return v != uint8(0)
+	case uint16:
+		return v != uint16(0)
+	case uint32:
+		return v != uint32(0)
+	case uint64:
+		return v != uint64(0)
+	case string:
+		return v != ""
+	case bool:
+		return v
+	case nil:
+		return false
+	default:
+		// Owner:zhangzhiqiang.aiyane Reviewer: Expire:9999-12-31 Reason:运算类型不匹配错误
+		logrus.Errorf("[toUint] type error: v1[%T]", v)
+		panic("type err")
+	}
 }
 
 func ToInt(i interface{}) interface{} {
